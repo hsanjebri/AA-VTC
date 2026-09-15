@@ -1,0 +1,9 @@
+{
+  "name": "aa-vtc",
+  "private": true,
+  "type": "module",
+  "description": "AA-VTC — static site + Vercel functions (fare estimate, Maps config)",
+  "scripts": {
+    "dev": "node dev-server.mjs"
+  }
+}
