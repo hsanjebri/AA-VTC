@@ -788,11 +788,14 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round
   backdrop-filter: blur(6px);
 }
 .partner__card-label { font-size: 11px; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; color: var(--gold); }
-.partner__name {
-  margin-top: 16px; font-family: var(--serif); font-weight: 350;
-  font-size: clamp(1.9rem, 3vw, 2.5rem); line-height: 1.08; letter-spacing: -.02em;
+/* Their logo keeps its own colours, on a light plate so the blue wordmark stays legible on navy */
+.partner__logo {
+  display: block; margin-top: 18px; padding: 22px 26px;
+  background: var(--cream); border-radius: 2px;
+  transition: transform .4s var(--ease-out), box-shadow .4s var(--ease);
 }
-.partner__name em { display: block; font-size: .55em; font-style: italic; color: var(--gold-soft); letter-spacing: .02em; }
+.partner__logo img { width: 100%; max-width: 230px; height: auto; margin-inline: auto; }
+.partner__logo:hover { transform: translateY(-2px); box-shadow: 0 24px 40px -28px rgba(0, 0, 0, .8); }
 .partner__slogan { margin-top: 14px; font-family: var(--serif); font-style: italic; font-size: 1.1rem; color: var(--gold); }
 .partner__note { margin-top: 18px; font-size: 14.5px; line-height: 1.6; color: rgba(247, 244, 236, .7); }
 .partner__card .link-arrow { margin-top: 22px; border-bottom-color: rgba(201, 162, 75, .5); }
