@@ -2,3 +2,11 @@
 !.env.example
 .vercel
 node_modules
+
+.vercel
+.env*
+
+.pglite
+
+# raw signature photo stays local; the processed PNG ships (private repo)
+private/

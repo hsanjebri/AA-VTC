@@ -539,6 +539,9 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round
   counter-increment: stop; content: counter(stop, decimal-leading-zero);
   font-family: var(--serif); font-size: 13px; color: var(--gold-ink); min-width: 22px;
 }
+.circuit__facts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+.circuit__facts li { padding: 8px 14px; border: 1px solid var(--line); font-size: 13px; color: var(--navy); }
+.circuit__facts li strong { font-family: var(--serif); font-weight: 500; font-size: 1.05rem; color: var(--gold-ink); }
 .circuit__ctas { display: flex; flex-wrap: wrap; align-items: center; gap: 18px 28px; margin-top: 34px; }
 
 @media (max-width: 900px) {
@@ -573,6 +576,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round
   padding: 3px 8px; font-family: var(--sans); font-size: 10px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
   background: var(--gold); color: var(--ink);
 }
+.rates__hint { font-size: 13px; font-style: italic; color: var(--muted); padding-top: 12px !important; }
 .rates__note { margin-top: 26px; font-size: 14px; color: var(--muted); }
 
 /* ---------- Contact ---------- */

@@ -29,7 +29,7 @@ http.createServer(async (req, res) => {
 
   if (url.pathname.startsWith('/api/')) {
     const name = url.pathname.slice(5).replace(/\/$/, '');
-    if (!/^[a-z-]+$/.test(name)) { res.statusCode = 404; return res.end('Not found'); }
+    if (!/^[a-z-]+(\/[a-z-]+)?$/.test(name)) { res.statusCode = 404; return res.end('Not found'); }
     let raw = '';
     for await (const chunk of req) raw += chunk;
     try { req.body = raw && req.headers['content-type']?.includes('json') ? JSON.parse(raw) : raw; } catch { req.body = raw; }
@@ -47,7 +47,11 @@ http.createServer(async (req, res) => {
     }
   }
 
-  const filePath = normalize(join(ROOT, url.pathname === '/' ? 'index.html' : decodeURIComponent(url.pathname)));
+  let pathname = decodeURIComponent(url.pathname);
+  if (pathname === '/') pathname = 'index.html';
+  else if (pathname.endsWith('/')) pathname += 'index.html';
+  else if (!extname(pathname)) pathname += '/index.html'; // /admin → /admin/index.html
+  const filePath = normalize(join(ROOT, pathname));
   if (!filePath.startsWith(ROOT) || /[\\/]\.env/.test(filePath)) { res.statusCode = 403; return res.end(); }
   try {
     const data = await readFile(filePath);

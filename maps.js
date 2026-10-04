@@ -176,7 +176,7 @@ import { matchPlaces, rankScore } from './places.js';
       if (e.key === 'ArrowDown' && open) { e.preventDefault(); this.move(1); }
       else if (e.key === 'ArrowUp' && open) { e.preventDefault(); this.move(-1); }
       else if (e.key === 'Enter' && open && this.active >= 0) { e.preventDefault(); this.choose(this.active); }
-      else if (e.key === 'Escape' && open) { e.preventDefault(); this.close(); }
+      else if (e.key === 'Escape') { if (open) e.preventDefault(); this.close(); } // also cancels a pending lookup
     }
 
     choose(index) {
@@ -251,11 +251,12 @@ import { matchPlaces, rankScore } from './places.js';
     ];
 
     function renderDone(q) {
-      document.getElementById('fare-price').textContent = eur.format(q.price);
+      document.getElementById('fare-price').textContent = `${eur.format(q.price)} HT`;
       document.getElementById('fare-meta').textContent =
         `${km.format(q.distanceKm)} km · environ ${formatDuration(q.durationMin)} · ${q.roundTrip ? 'aller-retour' : 'aller simple'}`;
-      document.getElementById('fare-breakdown').textContent =
-        `${km.format(q.distanceKm)} km × ${eur.format(q.ratePerKm)}/km · TVA ${q.vatRate} %`;
+      document.getElementById('fare-breakdown').textContent = q.minFareApplied
+        ? `Forfait minimum ${eur.format(q.minFare)} HT · TVA ${q.vatRate} %`
+        : `${km.format(q.distanceKm)} km × ${eur.format(q.ratePerKm)} HT/km · TVA ${q.vatRate} %`;
 
       const suggest = document.getElementById('fare-suggest');
       suggest.replaceChildren();
@@ -265,31 +266,52 @@ import { matchPlaces, rankScore } from './places.js';
         const title = document.createElement('strong');
         const text = document.createElement('p');
         const specs = `${f.hours} h, ${f.includedKm} km inclus${f.vatRate ? `, TVA ${f.vatRate} %` : ''}`;
+        const forfaitPrice = `${eur.format(f.price)} HT`;
         if (q.suggestion.type === 'cheaper') {
-          title.textContent = `Plus avantageux : forfait ${f.name}`;
-          text.textContent = `${eur.format(f.price)} (${specs}), soit ${eur.format(q.suggestion.savings)} de moins.`;
+          title.textContent = `Plus avantageux : mise à disposition ${f.name}`;
+          text.textContent = `${forfaitPrice} (${specs}), soit ${eur.format(q.suggestion.savings)} de moins.`;
         } else {
           title.textContent = 'Le chauffeur vous attend sur place ?';
-          text.textContent = `Le forfait ${f.name} (${specs}) couvre cet aller-retour avec mise à disposition : ${eur.format(f.price)}.`;
+          text.textContent = `La mise à disposition ${f.name} (${specs}) couvre cet aller-retour : ${forfaitPrice}.`;
         }
         const link = document.createElement('a');
         link.className = 'link-arrow link-arrow--light';
         link.target = '_blank';
         link.rel = 'noopener';
-        link.textContent = `Réserver le forfait ${f.name}`;
+        link.textContent = `Réserver la mise à disposition ${f.name}`;
         link.href = waLink([
-          `Bonjour AA-VTC, je souhaite réserver le forfait ${f.name} (${f.hours} h, ${eur.format(f.price)}, ${f.includedKm} km inclus).`,
+          `Bonjour AA-VTC, je souhaite réserver la mise à disposition ${f.name} (${f.hours} h, ${forfaitPrice}, ${f.includedKm} km inclus).`,
           ...tripLines(),
           'Date : ', 'Heure : ', 'Nombre de passagers : ',
         ].join('\n'));
         suggest.append(title, text, link);
       }
 
-      document.getElementById('fare-book').href = waLink([
+      // Record the request for the dashboard; the visitor still goes on to WhatsApp.
+      const bookBtn = document.getElementById('fare-book');
+      bookBtn.onclick = () => {
+        fetch('/api/booking', {
+          method: 'POST',
+          keepalive: true,
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            service: 'transfert',
+            pickup: from.label,
+            dropoff: to.label,
+            roundTrip: q.roundTrip,
+            distanceKm: q.distanceKm,
+            durationMin: q.durationMin,
+            priceHt: q.price,
+            vatRate: q.vatRate,
+          }),
+        }).catch(() => {});
+      };
+
+      bookBtn.href = waLink([
         'Bonjour AA-VTC, je souhaite réserver ce trajet :',
         ...tripLines(),
         `Distance : ${km.format(q.distanceKm)} km (environ ${formatDuration(q.durationMin)})`,
-        `Estimation en ligne : ${eur.format(q.price)} (TVA ${q.vatRate} %)`,
+        `Estimation en ligne : ${eur.format(q.price)} HT (TVA ${q.vatRate} %)`,
         'Date : ', 'Heure : ', 'Nombre de passagers : ',
       ].join('\n'));
 
