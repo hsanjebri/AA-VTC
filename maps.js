@@ -209,6 +209,78 @@ import { matchPlaces, rankScore } from './places.js';
     }
   }
 
+  /** Encoded polyline (precision 5) → [[lat, lng], …] */
+  function decodePolyline(str) {
+    const points = [];
+    let index = 0, lat = 0, lng = 0;
+    while (index < str.length) {
+      for (let i = 0; i < 2; i++) {
+        let shift = 0, result = 0, byte;
+        do {
+          byte = str.charCodeAt(index++) - 63;
+          result |= (byte & 0x1f) << shift;
+          shift += 5;
+        } while (byte >= 0x20);
+        const delta = result & 1 ? ~(result >> 1) : result >> 1;
+        if (i === 0) lat += delta; else lng += delta;
+      }
+      points.push([lat / 1e5, lng / 1e5]);
+    }
+    return points;
+  }
+
+  /** Draws the estimated route on a small map under the estimator. */
+  let routeMap = null;
+  let routeLayers = [];
+  async function showRoute(q, labels) {
+    const frame = document.getElementById('fare-map');
+    if (!frame || !q.route) return;
+    try {
+      const L = await loadLeaflet();
+      frame.hidden = false;
+      if (!routeMap) {
+        routeMap = L.map(frame, { zoomControl: true, scrollWheelZoom: false, attributionControl: true });
+        routeMap.setView([49.1, -0.4], 8); // a view must exist before layers are added
+        routeMap.attributionControl.setPrefix(false);
+        L.tileLayer(IGN_TILES, {
+          minZoom: 5, maxZoom: 18,
+          attribution: '<a href="https://www.ign.fr/" target="_blank" rel="noopener">© IGN</a> Géoplateforme · <a href="https://leafletjs.com" target="_blank" rel="noopener">Leaflet</a>',
+        }).addTo(routeMap);
+        routeMap.on('click', () => routeMap.scrollWheelZoom.enable());
+        routeMap.on('mouseout', () => routeMap.scrollWheelZoom.disable());
+      }
+
+      routeLayers.forEach((layer) => routeMap.removeLayer(layer));
+      routeLayers = [];
+
+      const points = decodePolyline(q.route);
+      const line = L.polyline(points, { color: '#0B1E3D', weight: 5, opacity: 0.9 }).addTo(routeMap);
+      const halo = L.polyline(points, { color: '#C9A24B', weight: 9, opacity: 0.35 }).addTo(routeMap);
+      // Addresses come from user input: escape them before they go anywhere near HTML.
+      const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (c) =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+      const pin = (point, label, kind) => L.marker([point.lat, point.lng], {
+        icon: L.divIcon({
+          className: `route-pin route-pin--${kind}`,
+          html: `<span class="route-pin__dot"></span><span class="route-pin__label">${escapeHtml(label)}</span>`,
+          iconSize: [0, 0],
+        }),
+        keyboard: false,
+        interactive: false,
+      }).addTo(routeMap);
+
+      const start = pin(q.from, labels.from, 'start');
+      const end = pin(q.to, labels.to, 'end');
+      routeLayers = [halo, line, start, end];
+
+      routeMap.invalidateSize();
+      routeMap.fitBounds(line.getBounds(), { padding: [34, 34] });
+    } catch (err) {
+      console.warn('[AA-VTC] Carte de l\'itinéraire indisponible :', err);
+      frame.hidden = true;
+    }
+  }
+
   /* =========================================================
      Fare estimator
      ========================================================= */
@@ -231,7 +303,12 @@ import { matchPlaces, rankScore } from './places.js';
       result.dataset.state = state;
       Object.entries(panels).forEach(([name, el]) => { el.hidden = name !== state; });
     };
-    const onEdit = () => { if (!busy && result.dataset.state !== 'idle') show('idle'); };
+    const onEdit = () => {
+      if (busy || result.dataset.state === 'idle') return;
+      show('idle');
+      const map = document.getElementById('fare-map'); // the drawn route no longer matches the fields
+      if (map) map.hidden = true;
+    };
 
     const from = new PlaceField(document.getElementById('fare-from'), onEdit);
     const to = new PlaceField(document.getElementById('fare-to'), onEdit);
@@ -260,7 +337,30 @@ import { matchPlaces, rankScore } from './places.js';
 
       const suggest = document.getElementById('fare-suggest');
       suggest.replaceChildren();
-      suggest.hidden = !q.suggestion;
+      suggest.hidden = !q.suggestion && !q.airportForfait;
+
+      // Fixed airport forfait (au départ du Havre) takes priority over the per-km price.
+      if (q.airportForfait) {
+        const f = q.airportForfait;
+        const title = document.createElement('strong');
+        title.textContent = `Forfait ${f.label}`;
+        const line = document.createElement('p');
+        line.textContent = `${eur.format(f.price)} HT par trajet (TVA ${f.vatRate} %)`
+          + (q.roundTrip ? ` · ${eur.format(f.total)} HT l'aller-retour` : '')
+          + (f.cheaper ? ` — soit ${eur.format(f.saving)} de moins qu'au kilomètre.` : '.');
+        const link = document.createElement('a');
+        link.className = 'link-arrow link-arrow--light';
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.textContent = `Réserver le forfait ${f.label}`;
+        link.href = waLink([
+          `Bonjour AA-VTC, je souhaite réserver le forfait ${f.label} (${eur.format(f.price)} HT par trajet).`,
+          ...tripLines(),
+          'Date : ', 'Heure : ', 'Nombre de passagers : ',
+        ].join('\n'));
+        suggest.append(title, line, link);
+      }
+
       if (q.suggestion) {
         const f = q.suggestion.forfait;
         const title = document.createElement('strong');
@@ -311,11 +411,14 @@ import { matchPlaces, rankScore } from './places.js';
         'Bonjour AA-VTC, je souhaite réserver ce trajet :',
         ...tripLines(),
         `Distance : ${km.format(q.distanceKm)} km (environ ${formatDuration(q.durationMin)})`,
-        `Estimation en ligne : ${eur.format(q.price)} HT (TVA ${q.vatRate} %)`,
+        q.airportForfait?.cheaper
+          ? `Forfait ${q.airportForfait.label} : ${eur.format(q.airportForfait.price)} HT par trajet (TVA ${q.airportForfait.vatRate} %)`
+          : `Estimation en ligne : ${eur.format(q.price)} HT (TVA ${q.vatRate} %)`,
         'Date : ', 'Heure : ', 'Nombre de passagers : ',
       ].join('\n'));
 
       show('done');
+      showRoute(q, { from: from.label, to: to.label });
     }
 
     function renderError(code) {

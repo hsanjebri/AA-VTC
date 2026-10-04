@@ -16,6 +16,44 @@ export const FORFAITS = [
   { id: '8h', name: '8 heures', hours: 8, includedKm: 200, price: 580, vatRate: FORFAIT_VAT_RATE },
 ];
 
+// Fixed airport forfaits, au départ du Havre (TVA 20 %).
+export const AIRPORT_FORFAITS = [
+  { id: 'orly', name: 'Paris Orly', price: 376, lat: 48.7289, lng: 2.3665 },
+  { id: 'cdg', name: 'Paris Roissy', price: 410, lat: 49.0052, lng: 2.5668 },
+  { id: 'caen', name: 'Aéroport de Caen', price: 120, lat: 49.1771, lng: -0.4573 },
+  { id: 'deauville', name: 'Aéroport Deauville', price: 45, lat: 49.3627, lng: 0.16 },
+];
+const LE_HAVRE = { lat: 49.4944, lng: 0.1079 };
+const LE_HAVRE_RADIUS_KM = 12;
+const AIRPORT_RADIUS_KM = 6;
+const FORFAIT_VAT = 20;
+
+const kmBetween = (a, b) => {
+  const rad = (d) => (d * Math.PI) / 180;
+  const dLat = rad(b.lat - a.lat);
+  const dLng = rad(b.lng - a.lng);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 6371 * 2 * Math.asin(Math.sqrt(h));
+};
+
+/** A fixed forfait applies when one end is Le Havre and the other is one of the listed airports. */
+export function matchAirportForfait(from, to) {
+  if (!from || !to) return null;
+  for (const [a, b, direction] of [[from, to, 'aller'], [to, from, 'retour']]) {
+    if (kmBetween(a, LE_HAVRE) > LE_HAVRE_RADIUS_KM) continue;
+    const airport = AIRPORT_FORFAITS.find((f) => kmBetween(b, f) <= AIRPORT_RADIUS_KM);
+    if (airport) {
+      return {
+        id: airport.id,
+        label: direction === 'aller' ? `Le Havre → ${airport.name}` : `${airport.name} → Le Havre`,
+        price: airport.price,
+        vatRate: FORFAIT_VAT,
+      };
+    }
+  }
+  return null;
+}
+
 // A round-trip "driver waits on site" forfait is only worth suggesting if it isn't wildly above the km price.
 const ALTERNATIVE_MAX_RATIO = 2.5;
 
@@ -29,7 +67,7 @@ const round2 = (n) => Math.round(n * 100) / 100;
  *  - it is strictly cheaper than the per-km price ("cheaper"), or
  *  - the trip is a round trip, where keeping the driver on site is the real alternative ("alternative").
  */
-export function quote({ distanceMeters, durationSeconds, roundTrip }) {
+export function quote({ distanceMeters, durationSeconds, roundTrip, from, to }) {
   const factor = roundTrip ? 2 : 1;
   const distanceKm = round1((distanceMeters / 1000) * factor);
   const durationMin = Math.max(1, Math.round((durationSeconds * factor) / 60));
@@ -48,6 +86,10 @@ export function quote({ distanceMeters, durationSeconds, roundTrip }) {
     suggestion = { type: 'alternative', forfait: covering[0] };
   }
 
+  // A fixed airport forfait replaces the per-km price when it applies (and is cheaper).
+  const airport = matchAirportForfait(from, to);
+  const airportTotal = airport ? round2(airport.price * (roundTrip ? 2 : 1)) : null;
+
   return {
     roundTrip: Boolean(roundTrip),
     distanceKm,
@@ -58,5 +100,8 @@ export function quote({ distanceMeters, durationSeconds, roundTrip }) {
     minFareApplied: price > metered,
     price,
     suggestion,
+    airportForfait: airport
+      ? { ...airport, total: airportTotal, cheaper: airportTotal < price, saving: round2(Math.max(price - airportTotal, 0)) }
+      : null,
   };
 }

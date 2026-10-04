@@ -723,6 +723,32 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round
 .btn[aria-busy="true"] .spinner { display: inline-block; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+.estimator__map {
+  grid-column: 1 / -1; height: 340px;
+  border-top: 1px solid rgba(247, 244, 236, .12);
+  background: #e8e4dc;
+}
+.estimator__map .leaflet-container { width: 100%; height: 100%; font-family: var(--sans); background: #e8e4dc; }
+.estimator__map .leaflet-bar { border: 1px solid rgba(11, 30, 61, .25); box-shadow: none; }
+.estimator__map .leaflet-bar a { color: var(--navy); }
+.estimator__map .leaflet-bar a:hover { background: var(--gold); color: var(--ink); }
+.estimator__map .leaflet-control-attribution { background: rgba(255, 255, 255, .8); font-size: 10px; }
+@media (max-width: 720px) { .estimator__map { height: 260px; } }
+
+.route-pin { position: absolute; left: 0; top: 0; pointer-events: none; }
+.route-pin__dot {
+  position: absolute; left: -7px; top: -7px; width: 14px; height: 14px; border-radius: 50%;
+  background: var(--navy); border: 3px solid var(--cream); box-shadow: 0 2px 8px rgba(0, 0, 0, .35);
+}
+.route-pin--end .route-pin__dot { background: var(--gold); }
+.route-pin__label {
+  position: absolute; left: 14px; top: -10px; display: block;
+  max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: 3px 8px; border-radius: 2px; background: rgba(11, 30, 61, .92); color: var(--cream);
+  font: 500 11px/16px var(--sans);
+}
+.route-pin--end .route-pin__label { left: auto; right: 14px; }
+
 .estimator__result {
   display: flex; flex-direction: column; justify-content: center;
   padding: clamp(28px, 3.4vw, 44px);
@@ -736,8 +762,8 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round
 
 .fare__price {
   margin-top: 10px; font-family: var(--serif); font-weight: 300;
-  font-size: clamp(3rem, 5.2vw, 4.4rem); line-height: 1; letter-spacing: -.03em;
-  color: var(--gold); font-variant-numeric: lining-nums;
+  font-size: clamp(2.4rem, 3.9vw, 3.6rem); line-height: 1.05; letter-spacing: -.03em;
+  color: var(--gold); font-variant-numeric: lining-nums; white-space: nowrap;
 }
 .fare-done:not([hidden]) .fare__price { animation: fareIn .9s var(--ease-out); }
 @keyframes fareIn { from { opacity: 0; transform: translateY(10px); } }
@@ -838,7 +864,8 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round
 /* Leaflet — navy/gold treatment of the IGN Plan tiles */
 .service-map__canvas { z-index: 0; } /* contain Leaflet's pane z-indexes (400+) below the info card */
 .service-map__canvas.leaflet-container { background: var(--navy); font-family: var(--sans); }
-.service-map .map-tiles { filter: grayscale(1) invert(.92) sepia(.9) hue-rotate(185deg) saturate(3) brightness(.5) contrast(1.35); }
+/* Plain map colours — the navy tint made it unreadable */
+.service-map .map-tiles { filter: saturate(1.03) contrast(1.02); }
 .service-map__canvas:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
 .service-map .leaflet-bar { border: 1px solid rgba(201, 162, 75, .35); border-radius: 2px; box-shadow: none; overflow: hidden; }
 .service-map .leaflet-bar a {
@@ -855,17 +882,22 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round
 
 /* Pins (Leaflet divIcons) */
 .map-pin { position: absolute; left: 0; top: 0; pointer-events: none; }
+/* Pins sit on a light map: dark ink with a white halo keeps them legible */
 .map-pin__dot {
-  position: absolute; left: -4.5px; top: -4.5px; width: 9px; height: 9px; border-radius: 50%;
-  background: var(--gold); box-shadow: 0 0 0 4px rgba(201, 162, 75, .22);
+  position: absolute; left: -5px; top: -5px; width: 10px; height: 10px; border-radius: 50%;
+  background: var(--gold); border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, .4);
 }
 .map-pin__label {
-  position: absolute; left: 12px; top: -8px; white-space: nowrap;
-  font: 500 11px/16px var(--sans); letter-spacing: .12em; text-transform: uppercase;
-  color: rgba(247, 244, 236, .88); text-shadow: 0 1px 6px rgba(0, 0, 0, .9);
+  position: absolute; left: 13px; top: -8px; white-space: nowrap;
+  font: 600 11px/16px var(--sans); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--navy);
+  text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 1px 2px rgba(255, 255, 255, .95);
 }
-.map-pin--primary .map-pin__dot { left: -7px; top: -7px; width: 14px; height: 14px; box-shadow: 0 0 0 6px rgba(201, 162, 75, .25), 0 0 0 16px rgba(201, 162, 75, .08); }
-.map-pin--primary .map-pin__label { left: 20px; top: -11px; font: italic 400 17px/22px var(--serif); letter-spacing: 0; text-transform: none; color: var(--gold); }
+.map-pin--primary .map-pin__dot { left: -8px; top: -8px; width: 16px; height: 16px; box-shadow: 0 0 0 5px rgba(201, 162, 75, .3), 0 1px 5px rgba(0, 0, 0, .4); }
+.map-pin--primary .map-pin__label {
+  left: -4px; top: -34px; font: italic 500 17px/22px var(--serif); letter-spacing: 0; text-transform: none;
+  color: var(--gold-ink); text-shadow: 0 0 4px #fff, 0 0 4px #fff, 0 0 8px #fff;
+}
 /* Towns are already named by the base map: label only the landmarks it doesn't show */
 .map-pin:not(.map-pin--primary):not(.map-pin--site) .map-pin__label { display: none; }
 @media (max-width: 720px) { .map-pin--site .map-pin__label { display: none; } }

@@ -135,13 +135,19 @@ export default async function handler(req, res) {
       return res.status(422).json({ error: 'no_route' });
     }
 
-    return res.status(200).json(
-      quote({
+    return res.status(200).json({
+      ...quote({
         distanceMeters: distanceKm * 1000,
         durationSeconds: Number.isFinite(durationSeconds) ? durationSeconds : 0,
         roundTrip: body.roundTrip === true,
-      })
-    );
+        from,
+        to,
+      }),
+      // For the map: encoded polyline (precision 5) plus the two endpoints.
+      route: typeof data.geometry === 'string' ? data.geometry : null,
+      from,
+      to,
+    });
   } catch (err) {
     console.error('[fare] IGN request failed:', err.name, err.message);
     return res.status(502).json({ error: 'upstream' });
