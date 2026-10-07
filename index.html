@@ -3,13 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>AA-VTC — Chauffeur privé en Normandie · Anywhere, Anytime.</title>
-  <meta name="description" content="AA-VTC, chauffeur privé haut de gamme en Normandie et partout en France. Transferts aéroports, gares et hôtels, circuits D-Day et châteaux de la Loire. 24h/24, 7j/7.">
+  <title>VTC Le Havre &amp; Normandie — Chauffeur privé 24h/24 | AA-VTC</title>
+  <meta name="description" content="Chauffeur privé VTC au Havre et en Normandie : transferts aéroports (Orly, Roissy, Deauville, Caen), gares et hôtels, circuits D-Day et Mont Saint-Michel. Estimation immédiate, réservation WhatsApp, 24h/24 et 7j/7.">
   <meta name="theme-color" content="#0B1E3D">
   <link rel="canonical" href="https://www.aa-vtc.fr/">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="AA-VTC — Anywhere, Anytime.">
-  <meta property="og:description" content="Chauffeur privé haut de gamme en Normandie et partout en France. 24h/24, 7j/7.">
+  <meta property="og:title" content="AA-VTC — Chauffeur privé VTC au Havre &amp; en Normandie">
+  <meta property="og:description" content="Transferts aéroports, gares et hôtels, circuits D-Day et Mont Saint-Michel. Estimation immédiate, 24h/24 et 7j/7.">
+  <meta property="og:site_name" content="AA-VTC">
+  <meta name="twitter:card" content="summary_large_image">
   <meta property="og:url" content="https://www.aa-vtc.fr/">
   <meta property="og:locale" content="fr_FR">
   <meta property="og:image" content="https://images.unsplash.com/photo-1671010496251-22eab06e3292?auto=format&fit=crop&w=1200&h=630&q=80">
@@ -26,15 +28,60 @@
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "TaxiService",
+    "@type": ["LocalBusiness", "TaxiService"],
+    "@id": "https://www.aa-vtc.fr/#business",
     "name": "AA-VTC",
+    "description": "Chauffeur privé VTC au Havre et en Normandie : transferts aéroports, gares et hôtels, mise à disposition et circuits touristiques (D-Day, Mont Saint-Michel, châteaux de la Loire).",
     "slogan": "Anywhere, Anytime.",
     "url": "https://www.aa-vtc.fr",
     "telephone": "+33652807488",
     "email": "contact@aa-vtc.fr",
-    "areaServed": ["Normandie", "France"],
-    "hoursAvailable": "Mo-Su 00:00-23:59",
-    "paymentAccepted": "Carte bancaire, Espèces"
+    "image": "https://www.aa-vtc.fr/favicon.svg",
+    "priceRange": "€€",
+    "currenciesAccepted": "EUR",
+    "paymentAccepted": "Carte bancaire, Espèces",
+    "areaServed": [
+      { "@type": "City", "name": "Le Havre" },
+      { "@type": "AdministrativeArea", "name": "Normandie" },
+      { "@type": "Country", "name": "France" }
+    ],
+    "openingHoursSpecification": [{
+      "@type": "OpeningHoursSpecification",
+      "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+      "opens": "00:00",
+      "closes": "23:59"
+    }],
+    "hasOfferCatalog": {
+      "@type": "OfferCatalog",
+      "name": "Prestations AA-VTC",
+      "itemListElement": [
+        {
+          "@type": "Offer",
+          "itemOffered": { "@type": "Service", "name": "Transfert local", "description": "Trajets de proximité facturés au kilomètre." },
+          "priceSpecification": { "@type": "UnitPriceSpecification", "price": "1.80", "priceCurrency": "EUR", "unitCode": "KMT", "valueAddedTaxIncluded": false }
+        },
+        {
+          "@type": "Offer",
+          "itemOffered": { "@type": "Service", "name": "Transfert aéroport Le Havre → Paris Roissy (CDG)" },
+          "priceSpecification": { "@type": "PriceSpecification", "price": "410", "priceCurrency": "EUR", "valueAddedTaxIncluded": false }
+        },
+        {
+          "@type": "Offer",
+          "itemOffered": { "@type": "Service", "name": "Transfert aéroport Le Havre → Paris Orly" },
+          "priceSpecification": { "@type": "PriceSpecification", "price": "376", "priceCurrency": "EUR", "valueAddedTaxIncluded": false }
+        },
+        {
+          "@type": "Offer",
+          "itemOffered": { "@type": "Service", "name": "Mise à disposition avec chauffeur (1 h)", "description": "20 km inclus." },
+          "priceSpecification": { "@type": "PriceSpecification", "price": "60", "priceCurrency": "EUR", "valueAddedTaxIncluded": false }
+        },
+        {
+          "@type": "Offer",
+          "itemOffered": { "@type": "Service", "name": "Circuit Mont Saint-Michel et alentours", "description": "Environ 10 h, kilométrage inclus." },
+          "priceSpecification": { "@type": "PriceSpecification", "price": "620", "priceCurrency": "EUR", "valueAddedTaxIncluded": false }
+        }
+      ]
+    }
   }
   </script>
 </head>
