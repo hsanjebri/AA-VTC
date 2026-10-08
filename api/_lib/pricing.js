@@ -8,7 +8,8 @@ export const TRANSFER_VAT_RATE = 10;   // %
 
 // Mise à disposition
 export const EXTRA_KM_RATE = 0.9;      // € HT / km au-delà du kilométrage inclus
-export const FORFAIT_VAT_RATE = 20;    // %
+export const EXTRA_KM_VAT_RATE = 10;   // % (km supplémentaires : transport de voyageurs)
+export const FORFAIT_VAT_RATE = 20;    // % (mise à disposition)
 
 export const FORFAITS = [
   { id: '1h', name: '1 heure', hours: 1, includedKm: 20, price: 60, vatRate: FORFAIT_VAT_RATE },
@@ -16,7 +17,7 @@ export const FORFAITS = [
   { id: '8h', name: '8 heures', hours: 8, includedKm: 200, price: 580, vatRate: FORFAIT_VAT_RATE },
 ];
 
-// Fixed airport forfaits, au départ du Havre (TVA 20 %).
+// Fixed airport forfaits, au départ du Havre : kilométrage inclus, TVA 10 %.
 export const AIRPORT_FORFAITS = [
   { id: 'orly', name: 'Paris Orly', price: 376, lat: 48.7289, lng: 2.3665 },
   { id: 'cdg', name: 'Paris Roissy', price: 410, lat: 49.0052, lng: 2.5668 },
@@ -26,7 +27,7 @@ export const AIRPORT_FORFAITS = [
 const LE_HAVRE = { lat: 49.4944, lng: 0.1079 };
 const LE_HAVRE_RADIUS_KM = 12;
 const AIRPORT_RADIUS_KM = 6;
-const FORFAIT_VAT = 20;
+const AIRPORT_VAT_RATE = 10; // forfaits : transport de voyageurs
 
 const kmBetween = (a, b) => {
   const rad = (d) => (d * Math.PI) / 180;
@@ -47,7 +48,7 @@ export function matchAirportForfait(from, to) {
         id: airport.id,
         label: direction === 'aller' ? `Le Havre → ${airport.name}` : `${airport.name} → Le Havre`,
         price: airport.price,
-        vatRate: FORFAIT_VAT,
+        vatRate: AIRPORT_VAT_RATE,
       };
     }
   }

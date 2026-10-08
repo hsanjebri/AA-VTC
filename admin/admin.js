@@ -468,7 +468,7 @@ function bookingModal(booking) {
     passengers: input('b-pax', { type: 'number', min: '1', max: '16', value: booking?.passengers ?? '' }),
     distanceKm: input('b-km', { type: 'number', min: '0', step: '0.1', value: booking?.distance_km ?? '' }),
     priceHt: input('b-price', { type: 'number', min: '0', step: '0.01', value: booking?.price_ht ?? '' }),
-    vatRate: select('b-vat', { 10: 'TVA 10 % (transfert)', 20: 'TVA 20 % (mise à disposition, circuit)' }, String(booking?.vat_rate ?? 10).replace('.0', '')),
+    vatRate: select('b-vat', { 10: 'TVA 10 % (transfert, forfaits, circuits)', 20: 'TVA 20 % (mise à disposition)' }, String(booking?.vat_rate ?? 10).replace('.0', '')),
     roundTrip: input('b-rt', { type: 'checkbox', checked: Boolean(booking?.round_trip), style: 'width:auto' }),
     notes: el('textarea', { id: 'b-notes' }, booking?.notes || ''),
   };
@@ -678,7 +678,7 @@ function devisModal({ booking, client, duplicate }) {
     name: input('d-name', { value: duplicate?.client_name || booking?.client_name || client?.name || '' }),
     phone: input('d-phone', { value: duplicate?.client_phone || booking?.client_phone || client?.phone || '', type: 'tel' }),
     email: input('d-email', { value: booking?.client_email || client?.email || '', type: 'email' }),
-    vatRate: select('d-vat', { 10: 'TVA 10 % (transfert)', 20: 'TVA 20 % (mise à disposition, circuit)' }, vatDefault),
+    vatRate: select('d-vat', { 10: 'TVA 10 % (transfert, forfaits, circuits)', 20: 'TVA 20 % (mise à disposition)' }, vatDefault),
     validUntil: input('d-valid', { type: 'date', value: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10) }),
     notes: el('textarea', { id: 'd-notes' }, duplicate?.notes || (booking ? `Trajet ${booking.pickup || ''} → ${booking.dropoff || ''}`.trim() : '')),
   };
