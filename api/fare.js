@@ -1,6 +1,6 @@
 // POST /api/fare — road distance via IGN Géoplateforme (free, no API key), priced with api/_lib/pricing.js.
 import { quote } from './_lib/pricing.js';
-import { findKnownPlace, kmBetween, rankScore } from '../places.js';
+import { findKnownPlace, kmBetween, rankScore } from '../public/places.js';
 
 const GEOCODE_URL = 'https://data.geopf.fr/geocodage/search';
 const ROUTE_URL = 'https://data.geopf.fr/navigation/itineraire';

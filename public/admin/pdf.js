@@ -1,50 +1,34 @@
-// Devis PDF — AA-VTC letterhead, brand fonts, optional electronic signature.
-import { readFileSync, existsSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { PDFDocument, rgb } from 'pdf-lib';
-import fontkit from '@pdf-lib/fontkit';
-
-const NAVY = rgb(0.043, 0.118, 0.239);
-const GOLD = rgb(0.788, 0.635, 0.294);
-const INK = rgb(0.04, 0.04, 0.05);
-const GREY = rgb(0.42, 0.44, 0.47);
-const LINE = rgb(0.85, 0.85, 0.85);
-const CREAM = rgb(0.969, 0.957, 0.925);
-const WHITE = rgb(1, 1, 1);
+// Devis PDF — AA-VTC letterhead, brand fonts, electronic signature.
+// Built in the admin's browser: on Cloudflare's free plan the server has 10 ms of CPU per request,
+// far too little to embed fonts into a PDF. Needs window.PDFLib and window.fontkit (vendored under /vendor/pdf-lib/).
 
 const A4 = { w: 595.28, h: 841.89 };
 const M = 48; // page margin
 
-const asset = (relative) => fileURLToPath(new URL(`../../assets/${relative}`, import.meta.url));
-const readAsset = (relative) => {
-  const path = asset(relative);
-  return existsSync(path) ? readFileSync(path) : null;
-};
-
 const euro = (n) => `${Number(n).toFixed(2).replace('.', ',')} €`;
 const frDate = (value) => new Date(value).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-/** Company identity comes from env vars — nothing is invented when they are missing. */
-function company() {
-  return {
-    name: process.env.COMPANY_NAME || 'AA-VTC',
-    address: process.env.COMPANY_ADDRESS || null,
-    siret: process.env.COMPANY_SIRET || null,
-    vtc: process.env.COMPANY_VTC || null,
-    tva: process.env.COMPANY_TVA || null,
-    signer: process.env.COMPANY_SIGNER || null,
-    phone: process.env.COMPANY_PHONE || '+33 6 52 80 74 88',
-    email: process.env.COMPANY_EMAIL || 'contact@aa-vtc.fr',
-    site: process.env.COMPANY_SITE || 'www.aa-vtc.fr',
-  };
-}
+/**
+ * @param devis      row from /api/admin/devis?id=N
+ * @param company    identity from the same response (env-driven server side, nothing invented)
+ * @param fonts      { serifBold, sans, sansBold } as ArrayBuffers
+ * @param signature  PNG ArrayBuffer or null
+ * @returns Uint8Array (PDF bytes)
+ */
+export async function buildDevisPdf(devis, { company: co, fonts, signature }) {
+  const { PDFDocument, rgb } = window.PDFLib;
+  const NAVY = rgb(0.043, 0.118, 0.239);
+  const GOLD = rgb(0.788, 0.635, 0.294);
+  const INK = rgb(0.04, 0.04, 0.05);
+  const GREY = rgb(0.42, 0.44, 0.47);
+  const LINE = rgb(0.85, 0.85, 0.85);
+  const CREAM = rgb(0.969, 0.957, 0.925);
+  const WHITE = rgb(1, 1, 1);
 
-export async function buildDevisPdf(devis) {
   const lines = JSON.parse(devis.lines);
-  const co = company();
 
   const pdf = await PDFDocument.create();
-  pdf.registerFontkit(fontkit);
+  pdf.registerFontkit(window.fontkit);
   pdf.setTitle(`Devis ${devis.number} — ${co.name}`);
   pdf.setProducer(co.name);
   pdf.setCreationDate(new Date(devis.created_at));
@@ -52,9 +36,9 @@ export async function buildDevisPdf(devis) {
   // Fraunces for display type, Inter for everything else. Subsetting is off: pdf-lib's
   // subsetter drops glyphs from these fonts (words came out with missing letters).
   const [serifBold, sans, sansBold] = await Promise.all([
-    pdf.embedFont(readAsset('fonts/Fraunces-SemiBold.ttf'), { subset: false }),
-    pdf.embedFont(readAsset('fonts/Inter-Regular.ttf'), { subset: false }),
-    pdf.embedFont(readAsset('fonts/Inter-SemiBold.ttf'), { subset: false }),
+    pdf.embedFont(fonts.serifBold, { subset: false }),
+    pdf.embedFont(fonts.sans, { subset: false }),
+    pdf.embedFont(fonts.sansBold, { subset: false }),
   ]);
 
   const page = pdf.addPage([A4.w, A4.h]);
@@ -211,9 +195,6 @@ export async function buildDevisPdf(devis) {
   page.drawRectangle({ x: proSigX, y: sigBoxY, width: sigW, height: sigH, color: CREAM });
   text(`Pour ${co.name}`, proSigX + 12, sigBoxY + sigH - 20, { size: 9, font: sansBold, color: NAVY });
 
-  // Signature lives next to the server code (never under a public folder, never in git).
-  const signaturePath = fileURLToPath(new URL('./signature.png', import.meta.url));
-  const signature = existsSync(signaturePath) ? readFileSync(signaturePath) : null;
   if (signature) {
     try {
       const image = await pdf.embedPng(signature);

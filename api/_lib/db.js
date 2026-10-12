@@ -14,8 +14,11 @@ async function connect() {
     // neon's query() takes (text, params) and returns rows
     queryFn = async (text, params = []) => sql.query(text, params);
   } else {
-    // Local fallback so the dashboard runs without a cloud database.
-    // The package name is built at runtime so the Vercel bundler never tries to include this dev dependency.
+    // Local fallback so the dashboard runs without a cloud database (Node only — never on Workers).
+    // The package name is built at runtime so no bundler tries to include this dev dependency.
+    if (typeof navigator !== 'undefined' && navigator.userAgent === 'Cloudflare-Workers') {
+      throw new Error('DATABASE_URL manquant : ajoutez le secret Neon (npx wrangler secret put DATABASE_URL)');
+    }
     const name = ['@electric-sql', 'pglite'].join('/');
     const { PGlite } = await import(name);
     const dir = process.env.PGLITE_DIR || './.pglite';

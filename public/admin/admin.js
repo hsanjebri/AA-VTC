@@ -1,4 +1,5 @@
 /* AA-VTC — Administration. Vanilla ES module, no build step. */
+import { buildDevisPdf } from '/admin/pdf.js';
 
 const eur = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });
 const dateFmt = new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -132,17 +133,41 @@ function showLogin() {
   $('login-email').focus();
 }
 
+/**
+ * The slow password hash runs here, in the browser (Web Crypto, 600 000 PBKDF2 rounds), so the
+ * server only compares a SHA-256 — it stays within Cloudflare's free-plan CPU limit.
+ */
+async function passwordProof(password, { salt, iterations }) {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', hash: 'SHA-256', salt: new TextEncoder().encode(salt), iterations },
+    key,
+    256,
+  );
+  return btoa(String.fromCharCode(...new Uint8Array(bits))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
 async function boot() {
+  let session;
   try {
-    const session = await api('/api/admin/auth');
-    if (!session.signedIn) return showLogin();
-    state.email = session.email;
-    $('session-email').textContent = session.email;
-    $('login-view').hidden = true;
-    $('app').hidden = false;
-    await refreshAll();
+    session = await api('/api/admin/auth');
   } catch {
-    showLogin();
+    return showLogin();
+  }
+  state.kdf = session.kdf;
+  if (!session.signedIn) return showLogin();
+
+  state.email = session.email;
+  $('session-email').textContent = session.email;
+  $('login-view').hidden = true;
+  $('app').hidden = false;
+
+  // A failing data call must not throw the user back to the login screen: the session is valid.
+  try {
+    await refreshAll();
+  } catch (err) {
+    console.error('[admin] chargement', err);
+    toast('Données indisponibles : ' + (err.code || err.message));
   }
 }
 
@@ -156,7 +181,13 @@ $('login-form').addEventListener('submit', async (e) => {
   try {
     await api('/api/admin/auth', {
       method: 'POST',
-      body: { email: $('login-email').value.trim(), password: $('login-password').value },
+      body: {
+        email: $('login-email').value.trim(),
+        proof: await (async () => {
+          if (!state.kdf) throw Object.assign(new Error('not_configured'), { code: 'not_configured' });
+          return passwordProof($('login-password').value, state.kdf);
+        })(),
+      },
     });
     $('login-password').value = '';
     error.hidden = true;
@@ -656,7 +687,7 @@ function renderDevis() {
       el('td', { class: 'num' }, money(d.total_ttc)),
       el('td', {}, d.valid_until ? dateFmt.format(asDate(d.valid_until)) : '—'),
       el('td', {}, el('div', { class: 'row-actions' }, [
-        el('a', { class: 'btn btn--gold btn--sm', href: `/api/admin/devis?id=${d.id}&pdf=1`, target: '_blank', rel: 'noopener' }, 'PDF'),
+        el('button', { class: 'btn btn--gold btn--sm', type: 'button', onclick: (e) => downloadDevisPdf(d.id, e.currentTarget) }, 'PDF'),
         el('button', { class: 'btn btn--line btn--sm', type: 'button', title: 'Créer un nouveau devis à partir de celui-ci',
           onclick: () => devisModal({ duplicate: d }) }, 'Dupliquer'),
         el('button', { class: 'btn btn--danger btn--sm', type: 'button', onclick: async () => {
@@ -751,7 +782,7 @@ function devisModal({ booking, client, duplicate }) {
           await Promise.all([loadDevis(), loadClients()]);
           showTab('devis');
           toast(`Devis ${devis.number} créé`);
-          window.open(`/api/admin/devis?id=${devis.id}&pdf=1`, '_blank', 'noopener');
+          downloadDevisPdf(devis.id);
         } catch (err) {
           toast('Erreur : ' + (err.code || err.message));
           e.target.disabled = false;
@@ -772,6 +803,56 @@ function devisModal({ booking, client, duplicate }) {
     addLine(label, 1, booking.price_ht ?? '');
   } else {
     addLine();
+  }
+}
+
+/* ---------- Devis PDF (built in the browser) ---------- */
+let pdfLibs = null;
+function loadPdfLibs() {
+  const load = (src) => new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = resolve;
+    script.onerror = () => reject(new Error(`load ${src}`));
+    document.head.append(script);
+  });
+  pdfLibs ||= Promise.all([
+    window.PDFLib ? null : load('/vendor/pdf-lib/pdf-lib.min.js'),
+    window.fontkit ? null : load('/vendor/pdf-lib/fontkit.umd.min.js'),
+  ]).catch((err) => { pdfLibs = null; throw err; });
+  return pdfLibs;
+}
+
+async function fetchBytes(url) {
+  const res = await fetch(url, { credentials: 'same-origin' });
+  if (!res.ok) throw new Error(`${url} → ${res.status}`);
+  return res.arrayBuffer();
+}
+
+async function downloadDevisPdf(id, button) {
+  const label = button?.textContent;
+  if (button) { button.disabled = true; button.textContent = '…'; }
+  try {
+    const [{ devis, company }, serifBold, sans, sansBold, signature] = await Promise.all([
+      api(`/api/admin/devis?id=${encodeURIComponent(id)}`),
+      fetchBytes('/assets/fonts/Fraunces-SemiBold.ttf'),
+      fetchBytes('/assets/fonts/Inter-Regular.ttf'),
+      fetchBytes('/assets/fonts/Inter-SemiBold.ttf'),
+      fetchBytes('/api/admin/signature').catch(() => null),
+      loadPdfLibs(),
+    ]);
+    const bytes = await buildDevisPdf(devis, { company, fonts: { serifBold, sans, sansBold }, signature });
+    const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+    const link = el('a', { href: url, download: `${devis.number}.pdf` });
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  } catch (err) {
+    console.error('[devis] PDF', err);
+    toast('PDF indisponible : ' + (err.code || err.message));
+  } finally {
+    if (button) { button.disabled = false; button.textContent = label; }
   }
 }
 

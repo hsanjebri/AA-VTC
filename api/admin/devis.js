@@ -1,7 +1,21 @@
-// /api/admin/devis — GET list or ?id=N&pdf=1 for the PDF · POST create · DELETE remove
+// /api/admin/devis — GET list or ?id=N (devis + company identity for the PDF) · POST create · DELETE remove
+// The PDF itself is built in the admin's browser (public/admin/pdf.js): it would exceed the
+// Workers free-plan CPU budget server-side.
 import { sql, nextRef } from '../_lib/db.js';
-import { buildDevisPdf } from '../_lib/pdf.js';
 import { isAllowedOrigin, requireAdmin } from '../_lib/auth.js';
+
+/** Company identity printed on the devis — from env vars, nothing invented when they are missing. */
+const company = () => ({
+  name: process.env.COMPANY_NAME || 'AA-VTC',
+  address: process.env.COMPANY_ADDRESS || null,
+  siret: process.env.COMPANY_SIRET || null,
+  vtc: process.env.COMPANY_VTC || null,
+  tva: process.env.COMPANY_TVA || null,
+  signer: process.env.COMPANY_SIGNER || null,
+  phone: process.env.COMPANY_PHONE || '+33 6 52 80 74 88',
+  email: process.env.COMPANY_EMAIL || 'contact@aa-vtc.fr',
+  site: process.env.COMPANY_SITE || 'aa-vtc.fr',
+});
 
 const text = (value, max = 300) => {
   if (typeof value !== 'string') return null;
@@ -42,14 +56,7 @@ export default async function handler(req, res) {
           SELECT d.*, c.name AS client_name, c.phone AS client_phone, c.email AS client_email
           FROM devis d LEFT JOIN clients c ON c.id = d.client_id WHERE d.id = ${id}`;
         if (!rows.length) return res.status(404).json({ error: 'not_found' });
-
-        if (url.searchParams.get('pdf')) {
-          const bytes = await buildDevisPdf(rows[0]);
-          res.setHeader('Content-Type', 'application/pdf');
-          res.setHeader('Content-Disposition', `attachment; filename="${rows[0].number}.pdf"`);
-          return res.status(200).end(Buffer.from(bytes));
-        }
-        return res.status(200).json({ devis: rows[0] });
+        return res.status(200).json({ devis: rows[0], company: company() });
       }
 
       const rows = await sql`

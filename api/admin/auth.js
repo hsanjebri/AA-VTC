@@ -1,20 +1,21 @@
-// /api/admin/auth — GET: session state · POST: login · DELETE: logout
+// /api/admin/auth — GET: session state + public KDF params · POST: login · DELETE: logout
 import {
-  clientIp, createSession, getSession, isAllowedOrigin, loginThrottled, sessionCookie, verifyPassword,
+  clientIp, createSession, getSession, isAllowedOrigin, isHttps, kdfParams, loginThrottled, sessionCookie, verifyProof,
 } from '../_lib/auth.js';
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
+  const secure = isHttps(req);
 
   if (req.method === 'GET') {
     const session = getSession(req);
-    return res.status(200).json({ signedIn: Boolean(session), email: session?.email || null });
+    return res.status(200).json({ signedIn: Boolean(session), email: session?.email || null, kdf: kdfParams() });
   }
 
   if (!isAllowedOrigin(req)) return res.status(403).json({ error: 'forbidden' });
 
   if (req.method === 'DELETE') {
-    res.setHeader('Set-Cookie', sessionCookie('', { clear: true }));
+    res.setHeader('Set-Cookie', sessionCookie('', { clear: true, secure }));
     return res.status(200).json({ signedIn: false });
   }
 
@@ -25,7 +26,7 @@ export default async function handler(req, res) {
 
   const expectedEmail = process.env.ADMIN_EMAIL;
   const expectedHash = process.env.ADMIN_PASSWORD_HASH;
-  if (!expectedEmail || !expectedHash) return res.status(503).json({ error: 'not_configured' });
+  if (!expectedEmail || !kdfParams() || !process.env.SESSION_SECRET) return res.status(503).json({ error: 'not_configured' });
 
   if (loginThrottled(clientIp(req))) {
     res.setHeader('Retry-After', '600');
@@ -37,12 +38,11 @@ export default async function handler(req, res) {
     try { body = JSON.parse(body); } catch { body = null; }
   }
   const email = String(body?.email || '').trim().toLowerCase();
-  const password = String(body?.password || '');
 
   // Same generic answer whether the email or the password is wrong.
-  const ok = email === expectedEmail.trim().toLowerCase() && verifyPassword(password, expectedHash);
+  const ok = email === expectedEmail.trim().toLowerCase() && verifyProof(body?.proof, expectedHash);
   if (!ok) return res.status(401).json({ error: 'invalid_credentials' });
 
-  res.setHeader('Set-Cookie', sessionCookie(createSession(email)));
+  res.setHeader('Set-Cookie', sessionCookie(createSession(email), { secure }));
   return res.status(200).json({ signedIn: true, email });
 }

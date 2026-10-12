@@ -10,3 +10,8 @@ node_modules
 
 # raw signature photo stays local; the processed PNG ships (private repo)
 private/
+
+# Cloudflare / local secrets
+.wrangler
+.dev.vars
+.open-next
