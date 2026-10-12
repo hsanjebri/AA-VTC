@@ -1,73 +1,70 @@
 # AA-VTC — Anywhere, Anytime.
 
-Single-page site for AA-VTC (private chauffeur, Normandy): static HTML/CSS/JS + one Vercel serverless function.
-**No API key and no billing account needed** — maps, address suggestions and routing use free public services.
+Site vitrine + estimation de tarif + administration privée.
+Hébergé sur **Cloudflare Workers** (plan gratuit) : un Worker sert `/api/*`, le dossier `public/` est servi
+en assets statiques. Aucune clé d'API payante : cartes, adresses et itinéraires viennent d'**IGN Géoplateforme**.
 
-## Files
-| Path | Role |
+## Arborescence
+
+| Chemin | Rôle |
 |---|---|
-| `index.html`, `styles.css`, `script.js` | Page, design, hero carousel / nav / WhatsApp links |
-| `maps.js` | Fare estimator (address suggestions) + service-area map (Leaflet) |
-| `vendor/leaflet/` | Leaflet 1.9.4 (self-hosted, loaded only when the map approaches the viewport) |
-| `api/fare.js` | `POST /api/fare` — geocoding + road distance (IGN) → price |
-| `api/booking.js` | `POST /api/booking` — records a booking request from the site |
-| `api/admin/*.js` | Dashboard API: auth, bookings, clients, stats, devis (PDF) |
-| `admin/` | The dashboard itself (login + 5 tabs), vanilla JS |
-| `scripts/hash-password.mjs` | Generates ADMIN_PASSWORD_HASH and SESSION_SECRET |
-| `api/_lib/pricing.js` | Tariffs & forfait logic (single source of truth) |
-| `dev-server.mjs` | Local server (site + `/api`) |
+| `public/` | **Tout ce qui est public** : site, `admin/`, `assets/`, `vendor/`, `_headers` |
+| `worker.js` | Entrée Cloudflare : route `/api/*` vers `api/`, sert le reste via les assets |
+| `api/*.js` | Points d'entrée publics : `fare` (estimation), `booking` (demande enregistrée) |
+| `api/admin/*.js` | Tableau de bord : `auth`, `bookings`, `clients`, `stats`, `devis`, `signature` |
+| `api/_lib/` | `pricing` (tarifs), `auth` (session, mot de passe), `db` (Postgres), `signature-data` |
+| `public/admin/pdf.js` | Génération du devis PDF **dans le navigateur** de l'administrateur |
+| `dev-server.mjs` | Serveur local Node (équivalent du Worker, avec base PGlite) |
+| `wrangler.jsonc` | Configuration Cloudflare (nom `aa-vtc`, assets, variables) |
 
-## Services used
-| Need | Service | Notes |
-|---|---|---|
-| Map | **Leaflet** + **Plan IGN v2** tiles (`data.geopf.fr/wmts`) | Free, open data, attribution "© IGN" shown on the map. Tinted navy/gold with a CSS filter (`.map-tiles` in `styles.css`). |
-| Address suggestions | **IGN Géoplateforme geocoding** (`data.geopf.fr/geocodage/search`) | Addresses (BAN) + places (stations, beaches, towns…). France only. Called from the browser. |
-| Distance / duration | **IGN Géoplateforme routing** (`data.geopf.fr/navigation/itineraire`, `bdtopo-osrm`, car) | Called by `/api/fare`. France only: trips with a start/end that can't be reached by road (sea, abroad) are rejected. |
+Le code serveur, `.dev.vars` et `private/` sont **hors de `public/`** : ils ne peuvent pas être servis.
 
-These are public services with fair-use rate limits; `/api/fare` accepts only same-site requests and max 20 estimates/minute per visitor.
+## Commandes
 
-## Pricing logic (`api/_lib/pricing.js`)
-All prices are HT (hors taxes).
-
-- **Transfert local**: `km × 1,80 € HT`, minimum `9,50 € HT`, TVA 10 %. Distance by road, doubled for *aller-retour*.
-- **Mise à disposition** (TVA 20 %): 1 h / 60 € HT / 20 km, 4 h / 300 € HT / 70 km, 8 h / 580 € HT / 200 km. Km supplémentaire : 0,90 € HT. Suggested when a forfait covers the whole trip (km and driving time) and is cheaper — or, for a round trip, as the "driver waits on site" alternative.
-- **Les forfaits** (fixed prices from Le Havre, TVA 20 %) and **circuits touristiques** (Mont Saint-Michel ~10 h / 620 € HT; D-Day and Loire sur devis) are shown in the tarifs table in `index.html` only — the estimator does not compute them.
-- The page states "Estimation, tarif final confirmé par SMS/WhatsApp".
-
-## Degraded modes
-- Suggestions unavailable → fields still work as free text (the server geocodes them).
-- Routing unavailable → message + "Demander un tarif sur WhatsApp" with the addresses pre-filled.
-- Map unavailable → styled fallback panel.
-
-## Administration (`/admin`)
-
-Private dashboard: bookings, planning, clients, revenue and devis (PDF).
-
-| Need | How |
-|---|---|
-| Login | One account. `ADMIN_EMAIL` + `ADMIN_PASSWORD_HASH` (scrypt), signed HttpOnly session cookie (12 h), max 8 login attempts / 10 min / IP, `noindex` + robots.txt |
-| Database | Postgres via `DATABASE_URL` (Neon). Tables are created automatically on first use. Locally, with no `DATABASE_URL`, an embedded Postgres (PGlite, dev dependency) is used and stored in `.pglite/` |
-| Bookings | Requests from the site land as `nouveau` (the estimator posts to `/api/booking` when the visitor clicks "Réserver ce trajet"); add or edit them by hand in the dashboard |
-| Devis | Lines + TVA → numbered `DV-YYYY-NNNN`, PDF generated server-side (pdf-lib) |
-
-### Setup
-1. **Database** — Vercel → Storage → create a Neon Postgres database → it adds `DATABASE_URL` to the project.
-2. **Account** — run `node scripts/hash-password.mjs "votre-mot-de-passe"` and copy the three printed variables into Vercel → Settings → Environment Variables (and into `.env.local` for local use).
-3. Redeploy, then open `https://www.aa-vtc.fr/admin`.
-
-Data protection: the dashboard stores client names, phones and emails. Keep the password private, and plan a retention/erasure policy (GDPR).
-
-## Run locally
 ```bash
-npm run dev      # http://localhost:3000 (site + /api)
+npm run dev         # http://localhost:3000  — Node + base locale PGlite
+npm run preview     # http://localhost:8787  — vrai runtime Workers (wrangler dev)
+npm run deploy      # déploiement Cloudflare
+npm run hash-password -- "mot de passe"   # génère ADMIN_PASSWORD_HASH + SESSION_SECRET
 ```
-`PORT=3100 npm run dev` if port 3000 is taken. **Do not double-click `index.html` or use `python -m http.server`**: without `/api` the fare estimate cannot work.
 
-## Deploy
-`vercel --prod`, or push to GitHub and import on vercel.com (Framework preset: *Other*, no build command, output directory `.`). Optionally set `ALLOWED_ORIGINS`.
+## Variables
 
-## Editing
-- WhatsApp number / default message: top of `script.js` and `maps.js` (`WA_NUMBER`).
-- Tariffs: `api/_lib/pricing.js` (and the displayed prices in `index.html`).
-- Map places: `PLACES` in `maps.js`; map colours: `.service-map .map-tiles` filter in `styles.css`.
-- QR code: replace the `.qr` placeholder in the Contact section with an image pointing to `https://wa.me/33652807488`.
+Non secrètes dans `wrangler.jsonc` (`vars`) : `ADMIN_EMAIL`, `ALLOWED_ORIGINS`, `COMPANY_*`.
+Secrets via `npx wrangler secret put NOM` :
+
+| Secret | Rôle |
+|---|---|
+| `DATABASE_URL` | Postgres Neon (sans lui, le tableau de bord ne fonctionne pas) |
+| `ADMIN_PASSWORD_HASH` | `v2$600000$<sel>$<sha256>` produit par `npm run hash-password` |
+| `SESSION_SECRET` | 32 caractères minimum, signe le cookie de session |
+
+En local, mettre les mêmes valeurs dans `.dev.vars` (ignoré par git).
+
+## Sécurité
+
+- **Mot de passe** : PBKDF2-SHA256, 600 000 tours, calculé **dans le navigateur** ; le serveur ne compare
+  qu'un SHA-256. Le budget CPU du plan gratuit (10 ms) est respecté sans affaiblir le stockage : un hash volé
+  coûte toujours 600 000 tours par essai.
+- **Session** : cookie `__Host-aa_admin`, HttpOnly, `SameSite=Strict`, Secure, signé HMAC, 12 h.
+- **En-têtes** (`public/_headers`) : CSP stricte (pas de `unsafe-eval`, pas de script tiers), HSTS,
+  `X-Frame-Options: DENY`, `Permissions-Policy`, `nosniff`.
+- **Limites** : 20 estimations/minute par visiteur, 8 tentatives de connexion/10 min.
+- `/admin` : `noindex`, `no-store`, et robots.txt l'exclut.
+- La **signature manuscrite** n'est jamais un fichier public : elle est servie par `/api/admin/signature`
+  uniquement à une session valide.
+
+## Tarifs (`api/_lib/pricing.js`)
+
+Prix HT. Transfert local : 1,80 €/km, minimum 9,50 €, **TVA 10 %**.
+Mise à disposition : 1 h/60 €, 4 h/300 €, 8 h/580 € — **TVA 20 %**, km supplémentaire 0,90 € (TVA 10 %).
+Forfaits aéroports au départ du Havre (Orly 376, Roissy 410, Caen 120, Deauville 45) et circuits :
+kilométrage inclus, **TVA 10 %**. L'estimateur propose automatiquement le forfait quand il s'applique.
+
+## Base de données
+
+Postgres (Neon) via `DATABASE_URL` ; les tables sont créées au premier appel.
+En local sans `DATABASE_URL`, une base embarquée (PGlite) est utilisée dans `.pglite/`.
+
+Données personnelles : le tableau de bord conserve nom, téléphone et e-mail des clients.
+Prévoir une politique de conservation et d'effacement (RGPD).

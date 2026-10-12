@@ -5,6 +5,16 @@
   "compatibility_date": "2026-09-15",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
+  "workers_dev": true, // keeps aa-vtc.aa-vtc.workers.dev alive as a fallback/test URL
+
+  // Cloudflare manages the DNS for these hostnames and issues the certificates.
+  // Email records (MX, SPF/DKIM TXT, SRV, autoconfig CNAMEs) are untouched.
+  "routes": [
+    { "pattern": "aa-vtc.fr", "custom_domain": true },
+    { "pattern": "www.aa-vtc.fr", "custom_domain": true },
+    { "pattern": "aa-vtc.com", "custom_domain": true },
+    { "pattern": "www.aa-vtc.com", "custom_domain": true }
+  ],
 
   // Only public/ is published. Server code, .env.local and private/ stay out of the upload.
   "assets": {

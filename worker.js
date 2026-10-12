@@ -97,6 +97,10 @@ async function runHandler(handler, request, url) {
   return new Response(payload, { status: statusCode, headers: outHeaders });
 }
 
+// One canonical host: www and the .com send a permanent redirect to https://aa-vtc.fr, path kept.
+const CANONICAL_HOST = 'aa-vtc.fr';
+const REDIRECT_HOSTS = new Set(['www.aa-vtc.fr', 'aa-vtc.com', 'www.aa-vtc.com']);
+
 export default {
   async fetch(request, env, ctx) {
     // Handlers read configuration through process.env; Workers pass it in `env`.
@@ -104,6 +108,14 @@ export default {
     globalThis.process.env = { ...globalThis.process.env, ...env };
 
     const url = new URL(request.url);
+
+    if (REDIRECT_HOSTS.has(url.hostname)) {
+      const target = new URL(url);
+      target.hostname = CANONICAL_HOST;
+      target.protocol = 'https:';
+      target.port = '';
+      return Response.redirect(target.toString(), 301);
+    }
     const handler = ROUTES[url.pathname.replace(/\/$/, '')];
 
     let response;
