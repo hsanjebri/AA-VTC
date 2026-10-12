@@ -387,26 +387,7 @@ import { matchPlaces, rankScore } from './places.js';
         suggest.append(title, text, link);
       }
 
-      // Record the request for the dashboard; the visitor still goes on to WhatsApp.
       const bookBtn = document.getElementById('fare-book');
-      bookBtn.onclick = () => {
-        fetch('/api/booking', {
-          method: 'POST',
-          keepalive: true,
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
-            service: 'transfert',
-            pickup: from.label,
-            dropoff: to.label,
-            roundTrip: q.roundTrip,
-            distanceKm: q.distanceKm,
-            durationMin: q.durationMin,
-            priceHt: q.price,
-            vatRate: q.vatRate,
-          }),
-        }).catch(() => {});
-      };
-
       bookBtn.href = waLink([
         'Bonjour AA-VTC, je souhaite réserver ce trajet :',
         ...tripLines(),

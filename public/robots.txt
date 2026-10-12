@@ -1,5 +1,4 @@
 User-agent: *
-Disallow: /admin
 Disallow: /api/
 
 Sitemap: https://www.aa-vtc.fr/sitemap.xml

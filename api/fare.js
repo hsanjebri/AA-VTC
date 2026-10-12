@@ -1,6 +1,7 @@
 // POST /api/fare — road distance via IGN Géoplateforme (free, no API key), priced with api/_lib/pricing.js.
 import { quote } from './_lib/pricing.js';
 import { findKnownPlace, kmBetween, rankScore } from '../public/places.js';
+import { clientIp, isAllowedOrigin, looksAutomated, rateLimit } from './_lib/guard.js';
 
 const GEOCODE_URL = 'https://data.geopf.fr/geocodage/search';
 const ROUTE_URL = 'https://data.geopf.fr/navigation/itineraire';
@@ -8,31 +9,6 @@ const TIMEOUT_MS = 10000;
 // IGN snaps start/end to the nearest routable road. If that road is far away (sea, abroad), the price would be wrong.
 const MAX_SNAP_KM = 3;
 
-// Best-effort, per-instance rate limit to stay a fair user of the public IGN services.
-const RATE_WINDOW_MS = 60_000;
-const RATE_MAX = 20;
-const hits = new Map();
-
-function rateLimited(ip) {
-  const now = Date.now();
-  const entry = hits.get(ip);
-  if (!entry || now - entry.start > RATE_WINDOW_MS) {
-    if (hits.size > 5000) hits.clear();
-    hits.set(ip, { start: now, count: 1 });
-    return false;
-  }
-  entry.count += 1;
-  return entry.count > RATE_MAX;
-}
-
-function isAllowedOrigin(req) {
-  const origin = req.headers.origin;
-  if (!origin) return false; // browsers always send Origin on POST
-  const host = req.headers['x-forwarded-host'] || req.headers.host;
-  if (host && (origin === `https://${host}` || origin === `http://${host}`)) return true;
-  const allowed = (process.env.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
-  return allowed.includes(origin);
-}
 
 function toWaypoint(input) {
   if (!input || typeof input !== 'object') return null;
@@ -83,12 +59,12 @@ export default async function handler(req, res) {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'method_not_allowed' });
   }
-  if (!isAllowedOrigin(req)) return res.status(403).json({ error: 'forbidden' });
+  if (!isAllowedOrigin(req) || looksAutomated(req)) return res.status(403).json({ error: 'forbidden' });
 
-  const ip = String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim();
-  if (rateLimited(ip)) {
+  const limited = rateLimit(clientIp(req));
+  if (limited) {
     res.setHeader('Retry-After', '60');
-    return res.status(429).json({ error: 'rate_limited' });
+    return res.status(429).json({ error: limited });
   }
 
   let body = req.body;

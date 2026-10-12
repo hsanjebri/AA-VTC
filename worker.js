@@ -1,34 +1,20 @@
 // Cloudflare Worker entry.
-// Static files are served from public/ by the assets binding; /api/* runs the handlers in api/,
-// which keep their Node-style (req, res) signature through the small adapter below.
+// public/ is served as static assets; the only server endpoint is /api/fare (tariff estimate).
 import fare from './api/fare.js';
-import booking from './api/booking.js';
-import adminAuth from './api/admin/auth.js';
-import adminBookings from './api/admin/bookings.js';
-import adminClients from './api/admin/clients.js';
-import adminDevis from './api/admin/devis.js';
-import adminStats from './api/admin/stats.js';
-import adminSignature from './api/admin/signature.js';
 
-const ROUTES = {
-  '/api/fare': fare,
-  '/api/booking': booking,
-  '/api/admin/auth': adminAuth,
-  '/api/admin/bookings': adminBookings,
-  '/api/admin/clients': adminClients,
-  '/api/admin/devis': adminDevis,
-  '/api/admin/stats': adminStats,
-  '/api/admin/signature': adminSignature,
-};
+const ROUTES = { '/api/fare': fare };
 
-// Sent on every response. The site loads no third-party scripts: everything is same-origin,
-// except Google Fonts (styles) and Unsplash/IGN images and API calls.
+const CANONICAL_HOST = 'aa-vtc.fr';
+const REDIRECT_HOSTS = new Set(['www.aa-vtc.fr', 'aa-vtc.com', 'www.aa-vtc.com']);
+
+// The site loads no third-party scripts; styles/fonts come from Google Fonts,
+// photos from Unsplash, maps and routing from IGN. Cloudflare injects its cookieless beacon.
 const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'X-Frame-Options': 'DENY',
   'Cross-Origin-Opener-Policy': 'same-origin',
-  'Permissions-Policy': 'geolocation=(), microphone=(), camera=(), payment=(), usb=(), interest-cohort=()',
+  'Permissions-Policy': 'geolocation=(), microphone=(), camera=(), payment=(), usb=()',
   'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
   'Content-Security-Policy': [
     "default-src 'self'",
@@ -36,25 +22,23 @@ const SECURITY_HEADERS = {
     "form-action 'self'",
     "frame-ancestors 'none'",
     "object-src 'none'",
-    "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com",            // one small inline bootstrap in index.html
+    "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: blob: https://images.unsplash.com https://data.geopf.fr",
     "connect-src 'self' https://data.geopf.fr https://cloudflareinsights.com",
-    "worker-src 'self' blob:",
     'upgrade-insecure-requests',
   ].join('; '),
 };
 
-/** Minimal Node-ish req/res so the existing handlers run unchanged. */
+/** Minimal Node-ish req/res so the handler keeps its (req, res) shape. */
 async function runHandler(handler, request, url) {
   const headers = Object.fromEntries(request.headers);
-  const contentType = headers['content-type'] || '';
   let body = '';
   if (request.method !== 'GET' && request.method !== 'HEAD') {
     body = await request.text();
-    if (contentType.includes('json') && body) {
-      try { body = JSON.parse(body); } catch { /* handlers re-check and answer 400 */ }
+    if ((headers['content-type'] || '').includes('json') && body) {
+      try { body = JSON.parse(body); } catch { /* the handler answers 400 */ }
     }
   }
 
@@ -74,11 +58,7 @@ async function runHandler(handler, request, url) {
 
   const res = {
     status(code) { statusCode = code; return res; },
-    setHeader(name, value) {
-      if (Array.isArray(value)) value.forEach((v) => outHeaders.append(name, v));
-      else outHeaders.set(name, value);
-      return res;
-    },
+    setHeader(name, value) { outHeaders.set(name, value); return res; },
     getHeader: (name) => outHeaders.get(name),
     json(data) {
       outHeaders.set('Content-Type', 'application/json; charset=utf-8');
@@ -86,30 +66,21 @@ async function runHandler(handler, request, url) {
       settle();
       return res;
     },
-    end(data) {
-      payload = data ?? null;
-      settle();
-      return res;
-    },
+    end(data) { payload = data ?? null; settle(); return res; },
   };
 
   await Promise.race([Promise.resolve(handler(req, res)).then(() => finished), finished]);
   return new Response(payload, { status: statusCode, headers: outHeaders });
 }
 
-// One canonical host: www and the .com send a permanent redirect to https://aa-vtc.fr, path kept.
-const CANONICAL_HOST = 'aa-vtc.fr';
-const REDIRECT_HOSTS = new Set(['www.aa-vtc.fr', 'aa-vtc.com', 'www.aa-vtc.com']);
-
 export default {
-  async fetch(request, env, ctx) {
-    // Handlers read configuration through process.env; Workers pass it in `env`.
+  async fetch(request, env) {
     globalThis.process ??= { env: {} };
     globalThis.process.env = { ...globalThis.process.env, ...env };
 
     const url = new URL(request.url);
 
-    // One canonical address: https://aa-vtc.fr. Everything else (www, .com, plain http) is redirected.
+    // One canonical address: https://aa-vtc.fr
     const wrongHost = REDIRECT_HOSTS.has(url.hostname);
     const insecure = url.protocol === 'http:' || request.headers.get('cf-visitor')?.includes('"http"');
     if (wrongHost || insecure) {
@@ -119,33 +90,40 @@ export default {
       target.port = '';
       return Response.redirect(target.toString(), 301);
     }
-    const handler = ROUTES[url.pathname.replace(/\/$/, '')];
 
+    const handler = ROUTES[url.pathname.replace(/\/$/, '')];
     let response;
     if (handler) {
+      // Edge-wide limit: Cloudflare counts per key across every isolate.
+      const ip = request.headers.get('cf-connecting-ip') || 'unknown';
+      let allowed = true;
+      if (env.FARE_LIMIT) {
+        try {
+          allowed = (await env.FARE_LIMIT.limit({ key: ip })).success;
+        } catch (err) {
+          console.error('[worker] rate limit', err?.message); // fail open: never block real visitors
+        }
+      }
+      if (!allowed) {
+        return new Response(JSON.stringify({ error: 'rate_limited' }), {
+          status: 429,
+          headers: { 'Content-Type': 'application/json; charset=utf-8', 'Retry-After': '60' },
+        });
+      }
       try {
         response = await runHandler(handler, request, url);
       } catch (err) {
         console.error('[worker]', url.pathname, err?.message);
-        response = new Response(JSON.stringify({ error: 'server_error' }), {
-          status: 500,
-          headers: { 'Content-Type': 'application/json; charset=utf-8' },
-        });
+        response = Response.json({ error: 'server_error' }, { status: 500 });
       }
     } else if (url.pathname.startsWith('/api/')) {
-      response = new Response(JSON.stringify({ error: 'not_found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json; charset=utf-8' },
-      });
+      response = Response.json({ error: 'not_found' }, { status: 404 });
     } else {
       response = await env.ASSETS.fetch(request);
     }
 
     response = new Response(response.body, response);
     for (const [name, value] of Object.entries(SECURITY_HEADERS)) response.headers.set(name, value);
-    if (url.pathname.startsWith('/admin') || url.pathname.startsWith('/api/')) {
-      response.headers.set('X-Robots-Tag', 'noindex, nofollow');
-    }
     return response;
   },
 };
