@@ -36,11 +36,11 @@ const SECURITY_HEADERS = {
     "form-action 'self'",
     "frame-ancestors 'none'",
     "object-src 'none'",
-    "script-src 'self' 'unsafe-inline'",            // one small inline bootstrap in index.html
+    "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com",            // one small inline bootstrap in index.html
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: blob: https://images.unsplash.com https://data.geopf.fr",
-    "connect-src 'self' https://data.geopf.fr",
+    "connect-src 'self' https://data.geopf.fr https://cloudflareinsights.com",
     "worker-src 'self' blob:",
     'upgrade-insecure-requests',
   ].join('; '),
@@ -109,9 +109,12 @@ export default {
 
     const url = new URL(request.url);
 
-    if (REDIRECT_HOSTS.has(url.hostname)) {
+    // One canonical address: https://aa-vtc.fr. Everything else (www, .com, plain http) is redirected.
+    const wrongHost = REDIRECT_HOSTS.has(url.hostname);
+    const insecure = url.protocol === 'http:' || request.headers.get('cf-visitor')?.includes('"http"');
+    if (wrongHost || insecure) {
       const target = new URL(url);
-      target.hostname = CANONICAL_HOST;
+      if (wrongHost) target.hostname = CANONICAL_HOST;
       target.protocol = 'https:';
       target.port = '';
       return Response.redirect(target.toString(), 301);

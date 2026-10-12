@@ -22,7 +22,9 @@
     "binding": "ASSETS",
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "404-page",
-    "run_worker_first": ["/api/*"]
+    // true (not just /api/*): the Worker must see every request to apply the canonical
+    // host + HTTPS redirects, which asset-only requests would otherwise bypass.
+    "run_worker_first": true
   },
 
   // Non-secret configuration. Secrets (DATABASE_URL, ADMIN_PASSWORD_HASH, SESSION_SECRET)
