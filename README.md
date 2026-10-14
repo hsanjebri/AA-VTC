@@ -1,5 +1,7 @@
 # AA-VTC — Anywhere, Anytime.
 
+[![CI/CD — AA-VTC](https://github.com/hsanjebri/AA-VTC/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/hsanjebri/AA-VTC/actions/workflows/ci-cd.yml)
+
 Site vitrine avec estimation de tarif en ligne, hébergé sur **Cloudflare Workers** (plan gratuit).
 `https://aa-vtc.fr` est l'adresse canonique ; `www` et les deux adresses en `.com` y sont redirigées (301).
 
@@ -25,8 +27,47 @@ Le code serveur est **hors de `public/`** : il ne peut pas être servi comme fic
 ```bash
 npm run dev       # http://localhost:3000  — serveur Node
 npm run preview   # http://localhost:8787  — vrai runtime Workers
+npm run lint      # syntaxe de tous les scripts + configuration
+npm test          # 62 tests (tarifs, anti-abus, SEO)
 npm run deploy    # déploiement Cloudflare
 ```
+
+Aucune dépendance n'est nécessaire pour `lint` et `test` : ils utilisent le
+vérificateur et le lanceur de tests intégrés à Node 22.
+
+## Pipeline CI/CD (`.github/workflows/ci-cd.yml`)
+
+Déclenché à chaque push sur `main`, à chaque pull request, ou manuellement
+(*Actions → CI/CD — AA-VTC → Run workflow*). Les cinq étapes sont visibles
+dans l'onglet **Actions** du dépôt.
+
+| Étape | Rôle | Échoue si |
+|---|---|---|
+| **1 · Qualité du code** | syntaxe de chaque script, validation de `package.json` et `wrangler.jsonc`, recherche de fichiers sensibles versionnés | une erreur de syntaxe ou un secret versionné |
+| **2 · Tests automatisés** | 3 suites : tarifs et TVA, protection anti-abus, SEO et contenu publié | un test échoue |
+| **3 · Build & artefact** | assemble `public/` dans `dist/`, contrôle le poids (< 5 Mo) et les fichiers indispensables, conserve l'artefact 30 jours | un fichier manque ou le site dépasse 5 Mo |
+| **4 · Déploiement OVH** | envoie `dist/` par SFTP (`lftp mirror`) | le transfert échoue |
+| **4 · Déploiement Cloudflare** | `wrangler deploy` (Worker + fichiers statiques) | le déploiement échoue |
+| **5 · Vérification en ligne** | HTTPS, redirections canoniques, balise canonical, robots/sitemap, en-têtes de sécurité, estimateur, blocage des robots sur l'API | le site en ligne ne répond pas comme attendu |
+
+Les étapes 1 → 2 → 3 sont enchaînées ; les deux déploiements tournent en
+parallèle ; la vérification n'a lieu que sur `main`, jamais sur une pull request.
+Un déploiement dont les secrets sont absents est **ignoré proprement** (étape
+verte, avertissement) plutôt que mis en échec.
+
+### Secrets à renseigner
+
+*Settings → Secrets and variables → Actions → New repository secret*
+
+| Secret | Pour | Où le trouver |
+|---|---|---|
+| `OVH_FTP_HOST` | OVH | espace client OVH → Hébergements → FTP-SSH |
+| `OVH_FTP_USER` | OVH | idem |
+| `OVH_FTP_PASSWORD` | OVH | idem |
+| `CLOUDFLARE_API_TOKEN` | Cloudflare | dash.cloudflare.com → My Profile → API Tokens → *Edit Cloudflare Workers* |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare | `2bd1db81d0bf866bf81b1ff8ad185bec` |
+
+Variable optionnelle `OVH_REMOTE_DIR` (défaut `/www`) pour le dossier distant.
 
 ## Sécurité
 
