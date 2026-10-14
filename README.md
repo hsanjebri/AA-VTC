@@ -1,6 +1,6 @@
 # AA-VTC — Anywhere, Anytime.
 
-[![CI/CD — AA-VTC](https://github.com/hsanjebri/AA-VTC/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/hsanjebri/AA-VTC/actions/workflows/ci-cd.yml)
+[![CI/CD Pipeline](https://github.com/hsanjebri/AA-VTC/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/hsanjebri/AA-VTC/actions/workflows/ci-cd.yml)
 
 Site vitrine avec estimation de tarif en ligne, hébergé sur **Cloudflare Workers** (plan gratuit).
 `https://aa-vtc.fr` est l'adresse canonique ; `www` et les deux adresses en `.com` y sont redirigées (301).
@@ -28,7 +28,7 @@ Le code serveur est **hors de `public/`** : il ne peut pas être servi comme fic
 npm run dev       # http://localhost:3000  — serveur Node
 npm run preview   # http://localhost:8787  — vrai runtime Workers
 npm run lint      # syntaxe de tous les scripts + configuration
-npm test          # 62 tests (tarifs, anti-abus, SEO)
+npm test          # 63 tests unitaires (tarifs, anti-abus, SEO)
 npm run deploy    # déploiement Cloudflare
 ```
 
@@ -38,22 +38,27 @@ vérificateur et le lanceur de tests intégrés à Node 22.
 ## Pipeline CI/CD (`.github/workflows/ci-cd.yml`)
 
 Déclenché à chaque push sur `main`, à chaque pull request, ou manuellement
-(*Actions → CI/CD — AA-VTC → Run workflow*). Les cinq étapes sont visibles
-dans l'onglet **Actions** du dépôt.
+(*Actions → CI/CD Pipeline → Run workflow*). Les cinq étapes (*stages*) sont
+visibles dans l'onglet **Actions** du dépôt.
 
-| Étape | Rôle | Échoue si |
+```
+Stage 1 · Lint ──→ Stage 2 · Unit Tests ──→ Stage 3 · Build ──┬──→ Stage 4 · Deploy to OVH ─────────┬──→ Stage 5 · Smoke Tests
+                                                              └──→ Stage 4 · Deploy to Cloudflare ──┘
+```
+
+| Stage | Rôle | Échoue si |
 |---|---|---|
-| **1 · Qualité du code** | syntaxe de chaque script, validation de `package.json` et `wrangler.jsonc`, recherche de fichiers sensibles versionnés | une erreur de syntaxe ou un secret versionné |
-| **2 · Tests automatisés** | 3 suites : tarifs et TVA, protection anti-abus, SEO et contenu publié | un test échoue |
-| **3 · Build & artefact** | assemble `public/` dans `dist/`, contrôle le poids (< 5 Mo) et les fichiers indispensables, conserve l'artefact 30 jours | un fichier manque ou le site dépasse 5 Mo |
-| **4 · Déploiement OVH** | envoie `dist/` par SFTP (`lftp mirror`) | le transfert échoue |
-| **4 · Déploiement Cloudflare** | `wrangler deploy` (Worker + fichiers statiques) | le déploiement échoue |
-| **5 · Vérification en ligne** | HTTPS, redirections canoniques, balise canonical, robots/sitemap, en-têtes de sécurité, estimateur, blocage des robots sur l'API | le site en ligne ne répond pas comme attendu |
+| **Stage 1 · Lint** | syntaxe de chaque script, validation de `package.json` et `wrangler.jsonc`, recherche de fichiers sensibles versionnés | une erreur de syntaxe ou un secret versionné |
+| **Stage 2 · Unit Tests** | 3 suites : tarifs et TVA, protection anti-abus, SEO et contenu publié | un test échoue |
+| **Stage 3 · Build** | assemble `public/` dans `dist/`, contrôle le poids (< 5 Mo) et les fichiers indispensables, conserve l'artefact 30 jours | un fichier manque ou le site dépasse 5 Mo |
+| **Stage 4 · Deploy to OVH** | envoie `dist/` par SFTP (`lftp mirror`) | le transfert échoue |
+| **Stage 4 · Deploy to Cloudflare** | `wrangler deploy` (Worker + fichiers statiques) | le déploiement échoue |
+| **Stage 5 · Smoke Tests** | HTTPS, redirections canoniques, balise canonical, robots/sitemap, en-têtes de sécurité, estimateur, blocage des robots sur l'API | le site en ligne ne répond pas comme attendu |
 
-Les étapes 1 → 2 → 3 sont enchaînées ; les deux déploiements tournent en
-parallèle ; la vérification n'a lieu que sur `main`, jamais sur une pull request.
-Un déploiement dont les secrets sont absents est **ignoré proprement** (étape
-verte, avertissement) plutôt que mis en échec.
+Les stages 1 → 2 → 3 sont enchaînés ; les deux déploiements tournent en
+parallèle ; les *smoke tests* n'ont lieu que sur `main`, jamais sur une pull
+request. Un déploiement dont les secrets sont absents est **ignoré proprement**
+(stage vert, avertissement) plutôt que mis en échec.
 
 ### Secrets à renseigner
 

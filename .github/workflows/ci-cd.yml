@@ -1,6 +1,6 @@
-name: CI/CD — AA-VTC
+name: CI/CD Pipeline
 
-# Déclencheurs : chaque push sur main, chaque pull request, ou manuellement.
+# Triggers: every push to main, every pull request, or manually.
 on:
   push:
     branches: [main]
@@ -8,148 +8,148 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# Un seul pipeline à la fois par branche : un nouveau push annule le précédent.
+# One pipeline at a time per branch: a new push cancels the previous run.
 concurrency:
   group: ci-cd-${{ github.ref }}
   cancel-in-progress: true
 
-# Droits minimaux : le pipeline ne fait que lire le dépôt.
+# Least privilege: the pipeline only reads the repository.
 permissions:
   contents: read
 
 jobs:
-  # ─────────────────────────────── ÉTAPE 1 ───────────────────────────────
-  qualite:
-    name: 1 · Qualité du code
+  # ─────────────────────────────── STAGE 1 ───────────────────────────────
+  lint:
+    name: Stage 1 · Lint
     runs-on: ubuntu-latest
     steps:
-      - name: Récupérer le code source
+      - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Installer Node.js 22
+      - name: Set up Node.js 22
         uses: actions/setup-node@v7
         with:
           node-version: '22'
 
-      - name: Vérifier la syntaxe de tous les scripts
+      - name: Lint — syntax of every script
         run: npm run lint
 
-      - name: Vérifier qu'aucun secret n'est versionné
+      - name: Lint — no secret committed to the repository
         run: |
-          echo "Recherche de fichiers sensibles dans le dépôt…"
-          # .env.example est volontairement versionné : il ne contient aucune valeur.
-          SENSIBLES=$(git ls-files \
+          echo "Scanning the repository for sensitive files…"
+          # .env.example is committed on purpose: it holds no values.
+          SENSITIVE=$(git ls-files \
             | grep -E '^(\.env($|\..*)|\.dev\.vars|private/|.*\.pem$|.*\.key$)' \
             | grep -v '^\.env\.example$' || true)
-          if [ -n "$SENSIBLES" ]; then
-            echo "$SENSIBLES"
-            echo "::error::Un fichier sensible est versionné"
+          if [ -n "$SENSITIVE" ]; then
+            echo "$SENSITIVE"
+            echo "::error::A sensitive file is committed"
             exit 1
           fi
-          echo "✔ Aucun fichier sensible versionné"
+          echo "✔ No sensitive file committed"
 
-  # ─────────────────────────────── ÉTAPE 2 ───────────────────────────────
-  tests:
-    name: 2 · Tests automatisés
+  # ─────────────────────────────── STAGE 2 ───────────────────────────────
+  unit-tests:
+    name: Stage 2 · Unit Tests
     runs-on: ubuntu-latest
-    needs: qualite
+    needs: lint
     steps:
-      - name: Récupérer le code source
+      - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Installer Node.js 22
+      - name: Set up Node.js 22
         uses: actions/setup-node@v7
         with:
           node-version: '22'
 
-      - name: Tests des tarifs (barème, forfaits, TVA)
+      - name: Unit tests — pricing (rates, forfaits, VAT)
         run: node --test tests/pricing.test.js
 
-      - name: Tests de sécurité (anti-bots, limite de débit)
+      - name: Unit tests — security guard (bots, rate limit)
         run: node --test tests/guard.test.js
 
-      - name: Tests SEO (balises, robots.txt, sitemap, liens)
+      - name: Unit tests — SEO (meta tags, robots, sitemap, links)
         run: node --test tests/seo.test.js
 
-      - name: Résumé des tests
+      - name: Test report
         if: always()
         run: |
           {
-            echo "### 2 · Tests automatisés"
+            echo "### Stage 2 · Unit Tests"
             echo ""
-            echo "| Suite | Fichier |"
+            echo "| Suite | File |"
             echo "|---|---|"
-            echo "| Tarifs et forfaits | \`tests/pricing.test.js\` |"
-            echo "| Protection anti-abus | \`tests/guard.test.js\` |"
-            echo "| SEO et contenu publié | \`tests/seo.test.js\` |"
+            echo "| Pricing and forfaits | \`tests/pricing.test.js\` |"
+            echo "| Abuse protection | \`tests/guard.test.js\` |"
+            echo "| SEO and published content | \`tests/seo.test.js\` |"
           } >> "$GITHUB_STEP_SUMMARY"
 
-  # ─────────────────────────────── ÉTAPE 3 ───────────────────────────────
+  # ─────────────────────────────── STAGE 3 ───────────────────────────────
   build:
-    name: 3 · Build & artefact
+    name: Stage 3 · Build
     runs-on: ubuntu-latest
-    needs: tests
+    needs: unit-tests
     steps:
-      - name: Récupérer le code source
+      - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Préparer le dossier à publier
+      - name: Build — assemble the publishable folder
         run: |
           mkdir -p dist
           cp -r public/. dist/
-          echo "Fichiers prêts à être publiés :"
+          echo "Files ready to publish:"
           find dist -type f | sort
 
-      - name: Contrôler le poids du site
+      - name: Build — check total size
         run: |
-          POIDS=$(du -sk dist | cut -f1)
-          echo "Poids total : ${POIDS} Ko"
-          if [ "$POIDS" -gt 5120 ]; then
-            echo "::error::Le site dépasse 5 Mo (${POIDS} Ko)"
+          SIZE=$(du -sk dist | cut -f1)
+          echo "Total size: ${SIZE} KB"
+          if [ "$SIZE" -gt 5120 ]; then
+            echo "::error::The site exceeds 5 MB (${SIZE} KB)"
             exit 1
           fi
-          echo "POIDS=$POIDS" >> "$GITHUB_ENV"
+          echo "SIZE=$SIZE" >> "$GITHUB_ENV"
 
-      - name: Vérifier les fichiers indispensables
+      - name: Build — verify required files
         run: |
           for f in index.html styles.css script.js robots.txt sitemap.xml favicon.svg; do
-            test -f "dist/$f" || { echo "::error::dist/$f manquant"; exit 1; }
+            test -f "dist/$f" || { echo "::error::dist/$f is missing"; exit 1; }
             echo "✔ $f"
           done
 
-      - name: Conserver l'artefact (téléchargeable 30 jours)
+      - name: Upload build artifact (kept 30 days)
         uses: actions/upload-artifact@v7
         with:
           name: site-aa-vtc
           path: dist
           retention-days: 30
 
-      - name: Résumé du build
+      - name: Build report
         run: |
           {
-            echo "### 3 · Build"
+            echo "### Stage 3 · Build"
             echo ""
-            echo "- Fichiers : **$(find dist -type f | wc -l)**"
-            echo "- Poids : **${POIDS} Ko**"
-            echo "- Artefact : \`site-aa-vtc\`"
+            echo "- Files: **$(find dist -type f | wc -l)**"
+            echo "- Size: **${SIZE} KB**"
+            echo "- Artifact: \`site-aa-vtc\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
-  # ─────────────────────────── ÉTAPE 4 — OVH ─────────────────────────────
+  # ─────────────────────────── STAGE 4 — OVH ─────────────────────────────
   deploy-ovh:
-    name: 4 · Déploiement OVH
+    name: Stage 4 · Deploy to OVH
     runs-on: ubuntu-latest
     needs: build
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     environment:
       name: production-ovh
     steps:
-      - name: Télécharger l'artefact du build
+      - name: Download build artifact
         uses: actions/download-artifact@v8
         with:
           name: site-aa-vtc
           path: dist
 
-      - name: Vérifier la présence des identifiants OVH
+      - name: Check OVH credentials
         id: config
         env:
           OVH_HOST: ${{ secrets.OVH_FTP_HOST }}
@@ -157,19 +157,19 @@ jobs:
           OVH_PASS: ${{ secrets.OVH_FTP_PASSWORD }}
         run: |
           if [ -n "$OVH_HOST" ] && [ -n "$OVH_USER" ] && [ -n "$OVH_PASS" ]; then
-            echo "pret=true" >> "$GITHUB_OUTPUT"
-            echo "✔ Identifiants OVH configurés"
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "✔ OVH credentials configured"
           else
-            echo "pret=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::Secrets OVH absents — déploiement OVH ignoré"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::OVH secrets missing — OVH deployment skipped"
           fi
 
-      - name: Installer le client de transfert (lftp)
-        if: steps.config.outputs.pret == 'true'
+      - name: Install transfer client (lftp)
+        if: steps.config.outputs.ready == 'true'
         run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
 
-      - name: Envoyer le site sur OVH (SFTP)
-        if: steps.config.outputs.pret == 'true'
+      - name: Deploy to OVH over SFTP
+        if: steps.config.outputs.ready == 'true'
         env:
           OVH_HOST: ${{ secrets.OVH_FTP_HOST }}
           OVH_USER: ${{ secrets.OVH_FTP_USER }}
@@ -183,20 +183,20 @@ jobs:
             open -u \"$OVH_USER\",\"$OVH_PASS\" sftp://$OVH_HOST;
             mirror --reverse --delete --verbose=1 --parallel=4 dist/ $OVH_DIR;
           "
-          echo "✔ Site déployé dans $OVH_DIR"
+          echo "✔ Site deployed to $OVH_DIR"
 
-      - name: Résumé du déploiement OVH
+      - name: Deployment report
         if: always()
         run: |
-          if [ "${{ steps.config.outputs.pret }}" = "true" ]; then
-            echo "### 4 · OVH — déployé ✅" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.config.outputs.ready }}" = "true" ]; then
+            echo "### Stage 4 · OVH — deployed ✅" >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "### 4 · OVH — ignoré (secrets non configurés) ⏭️" >> "$GITHUB_STEP_SUMMARY"
+            echo "### Stage 4 · OVH — skipped (secrets not configured) ⏭️" >> "$GITHUB_STEP_SUMMARY"
           fi
 
-  # ──────────────────────── ÉTAPE 4 — CLOUDFLARE ─────────────────────────
+  # ──────────────────────── STAGE 4 — CLOUDFLARE ─────────────────────────
   deploy-cloudflare:
-    name: 4 · Déploiement Cloudflare Workers
+    name: Stage 4 · Deploy to Cloudflare
     runs-on: ubuntu-latest
     needs: build
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
@@ -204,92 +204,92 @@ jobs:
       name: production
       url: https://aa-vtc.fr
     steps:
-      - name: Récupérer le code source
+      - name: Checkout repository
         uses: actions/checkout@v7
 
-      - name: Installer Node.js 22
+      - name: Set up Node.js 22
         uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
 
-      - name: Installer les dépendances
+      - name: Install dependencies
         run: npm ci
 
-      - name: Vérifier la présence du jeton Cloudflare
+      - name: Check Cloudflare API token
         id: config
         env:
           CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           if [ -n "$CF_TOKEN" ]; then
-            echo "pret=true" >> "$GITHUB_OUTPUT"
-            echo "✔ Jeton Cloudflare configuré"
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "✔ Cloudflare token configured"
           else
-            echo "pret=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::CLOUDFLARE_API_TOKEN absent — déploiement Cloudflare ignoré"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::CLOUDFLARE_API_TOKEN missing — Cloudflare deployment skipped"
           fi
 
-      - name: Publier le Worker et les fichiers statiques
-        if: steps.config.outputs.pret == 'true'
+      - name: Deploy Worker and static assets
+        if: steps.config.outputs.ready == 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: npx wrangler deploy
 
-      - name: Résumé du déploiement Cloudflare
+      - name: Deployment report
         if: always()
         run: |
-          if [ "${{ steps.config.outputs.pret }}" = "true" ]; then
-            echo "### 4 · Cloudflare — déployé sur https://aa-vtc.fr ✅" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.config.outputs.ready }}" = "true" ]; then
+            echo "### Stage 4 · Cloudflare — deployed to https://aa-vtc.fr ✅" >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "### 4 · Cloudflare — ignoré (jeton non configuré) ⏭️" >> "$GITHUB_STEP_SUMMARY"
+            echo "### Stage 4 · Cloudflare — skipped (token not configured) ⏭️" >> "$GITHUB_STEP_SUMMARY"
           fi
 
-  # ─────────────────────────────── ÉTAPE 5 ───────────────────────────────
-  verification:
-    name: 5 · Vérification du site en ligne
+  # ─────────────────────────────── STAGE 5 ───────────────────────────────
+  smoke-tests:
+    name: Stage 5 · Smoke Tests
     runs-on: ubuntu-latest
     needs: [deploy-ovh, deploy-cloudflare]
     if: always() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     steps:
-      - name: Le site répond en HTTPS
+      - name: Smoke test — site responds over HTTPS
         run: |
           CODE=$(curl -s -o /dev/null -w '%{http_code}' --retry 3 --retry-delay 5 --max-time 30 https://aa-vtc.fr/)
           echo "https://aa-vtc.fr/ → $CODE"
-          test "$CODE" = "200" || { echo "::error::Le site ne répond pas (code $CODE)"; exit 1; }
+          test "$CODE" = "200" || { echo "::error::Site is down (HTTP $CODE)"; exit 1; }
 
-      - name: Les redirections canoniques fonctionnent
+      - name: Smoke test — canonical redirects work
         run: |
           for H in www.aa-vtc.fr aa-vtc.com www.aa-vtc.com; do
             CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "https://$H/")
-            CIBLE=$(curl -s -o /dev/null -w '%{redirect_url}' --max-time 30 "https://$H/")
-            echo "$H → $CODE $CIBLE"
-            test "$CODE" = "301" || { echo "::error::$H ne redirige pas (code $CODE)"; exit 1; }
+            TARGET=$(curl -s -o /dev/null -w '%{redirect_url}' --max-time 30 "https://$H/")
+            echo "$H → $CODE $TARGET"
+            test "$CODE" = "301" || { echo "::error::$H does not redirect (HTTP $CODE)"; exit 1; }
           done
 
-      - name: La balise canonical est correcte
+      - name: Smoke test — canonical tag is correct
         run: |
           curl -s --max-time 30 https://aa-vtc.fr/ | grep -q 'rel="canonical" href="https://aa-vtc.fr/"' \
-            || { echo "::error::balise canonical absente ou incorrecte"; exit 1; }
+            || { echo "::error::canonical tag missing or wrong"; exit 1; }
           echo "✔ canonical = https://aa-vtc.fr/"
 
-      - name: robots.txt et sitemap.xml sont servis
+      - name: Smoke test — robots.txt and sitemap.xml are served
         run: |
           curl -s --max-time 30 https://aa-vtc.fr/robots.txt | grep -q 'Sitemap: https://aa-vtc.fr/sitemap.xml' \
-            || { echo "::error::robots.txt incorrect"; exit 1; }
+            || { echo "::error::robots.txt is wrong"; exit 1; }
           curl -s --max-time 30 https://aa-vtc.fr/sitemap.xml | grep -q '<loc>https://aa-vtc.fr/</loc>' \
-            || { echo "::error::sitemap.xml incorrect"; exit 1; }
-          echo "✔ robots.txt et sitemap.xml conformes"
+            || { echo "::error::sitemap.xml is wrong"; exit 1; }
+          echo "✔ robots.txt and sitemap.xml are correct"
 
-      - name: Les en-têtes de sécurité sont présents
+      - name: Smoke test — security headers are present
         run: |
-          EN_TETES=$(curl -s -I --max-time 30 https://aa-vtc.fr/)
+          HEADERS=$(curl -s -I --max-time 30 https://aa-vtc.fr/)
           for H in "strict-transport-security" "content-security-policy" "x-frame-options" "x-content-type-options"; do
-            echo "$EN_TETES" | grep -qi "^$H:" || { echo "::error::en-tête $H manquant"; exit 1; }
+            echo "$HEADERS" | grep -qi "^$H:" || { echo "::error::header $H is missing"; exit 1; }
             echo "✔ $H"
           done
 
-      - name: L'estimateur de tarif répond
+      - name: Smoke test — fare estimator answers
         run: |
           CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 \
             -X POST https://aa-vtc.fr/api/fare \
@@ -298,29 +298,29 @@ jobs:
             -H 'User-Agent: Mozilla/5.0 (CI AA-VTC)' \
             -d '{"origin":{"lat":49.4944,"lng":0.1079},"destination":{"lat":49.1771,"lng":-0.4573}}')
           echo "POST /api/fare → $CODE"
-          test "$CODE" = "200" || { echo "::error::l'estimateur ne répond pas (code $CODE)"; exit 1; }
+          test "$CODE" = "200" || { echo "::error::fare estimator is down (HTTP $CODE)"; exit 1; }
 
-      - name: L'API refuse les robots
+      - name: Smoke test — API rejects automated clients
         run: |
           CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 \
             -X POST https://aa-vtc.fr/api/fare -H 'Content-Type: application/json' -d '{}')
-          echo "POST sans Origin (curl) → $CODE"
-          test "$CODE" = "403" || { echo "::error::l'API devrait refuser (code $CODE)"; exit 1; }
-          echo "✔ les appels automatisés sont bloqués"
+          echo "POST without Origin (curl) → $CODE"
+          test "$CODE" = "403" || { echo "::error::API should have rejected this (HTTP $CODE)"; exit 1; }
+          echo "✔ automated clients are blocked"
 
-      - name: Résumé final
+      - name: Smoke test report
         if: always()
         run: |
           {
-            echo "### 5 · Vérification du site en ligne"
+            echo "### Stage 5 · Smoke Tests"
             echo ""
-            echo "| Contrôle | État |"
+            echo "| Check | Status |"
             echo "|---|---|"
-            echo "| https://aa-vtc.fr répond | ✅ |"
-            echo "| Redirections canoniques (www, .com) | ✅ |"
-            echo "| Balise canonical | ✅ |"
-            echo "| robots.txt et sitemap.xml | ✅ |"
-            echo "| En-têtes de sécurité | ✅ |"
-            echo "| Estimateur de tarif | ✅ |"
-            echo "| Blocage des robots sur l'API | ✅ |"
+            echo "| https://aa-vtc.fr responds | ✅ |"
+            echo "| Canonical redirects (www, .com) | ✅ |"
+            echo "| Canonical tag | ✅ |"
+            echo "| robots.txt and sitemap.xml | ✅ |"
+            echo "| Security headers | ✅ |"
+            echo "| Fare estimator | ✅ |"
+            echo "| API blocks bots | ✅ |"
           } >> "$GITHUB_STEP_SUMMARY"

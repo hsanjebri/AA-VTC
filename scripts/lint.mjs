@@ -1,5 +1,5 @@
-// Contrôle de syntaxe, sans dépendance : « node --check » sur chaque script,
-// puis validation des fichiers de configuration JSON / JSONC.
+// Dependency-free lint: "node --check" on every script, then validation of the
+// JSON / JSONC configuration files.
 import { execFileSync } from 'node:child_process';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -18,7 +18,7 @@ function walk(dir, out = []) {
   return out;
 }
 
-/** JSONC : retire les commentaires // et les virgules traînantes avant de parser. */
+/** JSONC: strip // comments and trailing commas before parsing. */
 function parseJsonc(text) {
   const stripped = text
     .replace(/"(?:[^"\\]|\\.)*"|\/\/[^\n]*|\/\*[\s\S]*?\*\//g, (m) => (m.startsWith('"') ? m : ''))
@@ -47,7 +47,7 @@ for (const file of ['package.json', 'wrangler.jsonc']) {
 }
 
 if (errors.length) {
-  console.error(`✖ ${errors.length} erreur(s) de syntaxe :\n\n${errors.join('\n\n')}`);
+  console.error(`✖ ${errors.length} syntax error(s):\n\n${errors.join('\n\n')}`);
   process.exit(1);
 }
-console.log(`✔ ${files.length} scripts et 2 fichiers de configuration valides`);
+console.log(`✔ ${files.length} scripts and 2 configuration files are valid`);
