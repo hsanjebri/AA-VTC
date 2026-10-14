@@ -24,10 +24,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Récupérer le code source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Installer Node.js 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
 
@@ -55,10 +55,10 @@ jobs:
     needs: qualite
     steps:
       - name: Récupérer le code source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Installer Node.js 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
 
@@ -91,7 +91,7 @@ jobs:
     needs: tests
     steps:
       - name: Récupérer le code source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Préparer le dossier à publier
         run: |
@@ -118,7 +118,7 @@ jobs:
           done
 
       - name: Conserver l'artefact (téléchargeable 30 jours)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: site-aa-vtc
           path: dist
@@ -144,7 +144,7 @@ jobs:
       name: production-ovh
     steps:
       - name: Télécharger l'artefact du build
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: site-aa-vtc
           path: dist
@@ -205,10 +205,10 @@ jobs:
       url: https://aa-vtc.fr
     steps:
       - name: Récupérer le code source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Installer Node.js 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
