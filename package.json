@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "node dev-server.mjs",
     "preview": "wrangler dev",
+    "lint": "node scripts/lint.mjs",
+    "test": "node --test \"tests/*.test.js\"",
     "deploy": "wrangler deploy"
   },
   "devDependencies": {

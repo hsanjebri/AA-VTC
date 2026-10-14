@@ -44,9 +44,13 @@ export function isAllowedOrigin(req) {
   return allowed.includes(origin);
 }
 
+// Matched as prefixes, not whole words: "PostmanRuntime/7.36" and "Python-urllib/3.11"
+// both slip past a trailing \b. No browser User-Agent contains any of these.
+const AUTOMATED_UA = /\b(curl|wget|python|httpie|scrapy|libwww|java|go-http|okhttp|postman|insomnia|restsharp|httpclient|guzzle|axios|node-fetch|headlesschrome|phantomjs)/;
+
 /** Obvious scripted clients: no browser sends these. Real crawlers never POST here. */
 export function looksAutomated(req) {
   const ua = String(req.headers['user-agent'] || '').toLowerCase();
   if (!ua) return true;
-  return /\b(curl|wget|python-requests|httpie|scrapy|libwww|java|go-http|okhttp|postman|axios|node-fetch)\b/.test(ua);
+  return AUTOMATED_UA.test(ua);
 }
