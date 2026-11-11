@@ -71,7 +71,6 @@
   const hero = document.querySelector('.hero');
   const slides = [...hero.querySelectorAll('.slide')];
   const segs = [...hero.querySelectorAll('.seg')];
-  const pauseBtn = document.getElementById('hero-pause');
   const indexEl = document.getElementById('hero-index');
   const titleEl = document.getElementById('hero-title');
   const subEl = document.getElementById('hero-sub');
@@ -79,13 +78,13 @@
   let current = 0;
   let userPaused = reducedMotion.matches;
 
+  let hovered = false;
+
   const syncPaused = () => {
-    // Pause while keyboard focus is inside the hero (not after a mouse/touch tap on a control).
+    // No on-screen controls: the slideshow pauses on hover and while keyboard
+    // focus is inside the hero, which keeps a way to stop the motion (WCAG 2.2.2).
     const engaged = !!hero.querySelector(':focus-visible');
-    const paused = userPaused || engaged || document.hidden;
-    hero.classList.toggle('is-paused', paused);
-    pauseBtn.setAttribute('aria-pressed', String(userPaused));
-    pauseBtn.setAttribute('aria-label', userPaused ? 'Reprendre le diaporama' : 'Mettre le diaporama en pause');
+    hero.classList.toggle('is-paused', userPaused || hovered || engaged || document.hidden);
   };
 
   const goTo = (next) => {
@@ -126,12 +125,8 @@
       if (i === current && !userPaused) goTo(current + 1);
     });
   });
-  document.getElementById('hero-prev').addEventListener('click', () => goTo(current - 1));
-  document.getElementById('hero-next').addEventListener('click', () => goTo(current + 1));
-  pauseBtn.addEventListener('click', () => {
-    userPaused = !userPaused;
-    syncPaused();
-  });
+  hero.addEventListener('mouseenter', () => { hovered = true; syncPaused(); });
+  hero.addEventListener('mouseleave', () => { hovered = false; syncPaused(); });
 
   hero.addEventListener('keydown', (e) => {
     if (e.target.closest('a')) return;

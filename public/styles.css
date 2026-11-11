@@ -328,20 +328,6 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round
 .hero.is-paused .seg.is-active .seg__fill { animation-play-state: paused; }
 @keyframes segFill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 
-.hero__buttons { display: flex; gap: 8px; }
-.icon-btn {
-  display: grid; place-items: center;
-  width: 46px; height: 46px; padding: 0;
-  border: 1px solid rgba(247, 244, 236, .3); border-radius: 50%;
-  background: rgba(10, 10, 12, .15); backdrop-filter: blur(6px);
-  cursor: pointer; transition: border-color .3s var(--ease), background-color .3s var(--ease);
-}
-.icon-btn:hover { border-color: var(--gold); background: rgba(201, 162, 75, .15); }
-.icon-btn svg { width: 18px; height: 18px; }
-.icon-btn .i-play { display: none; }
-.icon-btn[aria-pressed="true"] .i-play { display: block; fill: currentColor; }
-.icon-btn[aria-pressed="true"] .i-pause { display: none; }
-
 @media (max-width: 720px) {
   .hero { min-height: 600px; }
   .hero__content { bottom: 132px; }
@@ -625,12 +611,38 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round
 @media (max-width: 520px) { .contact__list { grid-template-columns: 1fr; } }
 
 /* ---------- Footer ---------- */
-.footer { background: var(--ink); color: rgba(247, 244, 236, .6); border-top: 1px solid rgba(247, 244, 236, .08); padding-block: 40px calc(40px + env(safe-area-inset-bottom, 0px)); }
-.footer__inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 32px; }
-.footer__slogan { font-family: var(--serif); font-size: 1.2rem; color: var(--gold); }
-.footer__meta { font-size: 13px; }
-.footer__meta a { text-decoration: none; }
-.footer__meta a:hover { color: var(--cream); }
+.footer { background: var(--ink); color: rgba(247, 244, 236, .62); border-top: 1px solid rgba(247, 244, 236, .08); padding-block: 64px calc(32px + env(safe-area-inset-bottom, 0px)); }
+.footer__grid { display: grid; grid-template-columns: 1.6fr 1fr 1.1fr; gap: 48px; align-items: start; }
+.footer__col--brand { max-width: 36ch; }
+.footer__slogan { font-family: var(--serif); font-size: 1.25rem; color: var(--gold); margin-top: 14px; }
+.footer__pitch { font-size: 13.5px; line-height: 1.6; margin-top: 12px; color: rgba(247, 244, 236, .55); }
+
+.footer__title { font-family: var(--sans); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: rgba(247, 244, 236, .45); margin-bottom: 18px; }
+.footer__links { list-style: none; display: grid; gap: 11px; font-size: 14px; }
+.footer__links a { text-decoration: none; color: rgba(247, 244, 236, .78); transition: color .2s ease; }
+.footer__links a:hover { color: var(--gold); }
+.footer__links--contact li { line-height: 1.45; }
+.footer__links--contact span { display: block; font-size: 12px; color: rgba(247, 244, 236, .42); margin-top: 2px; }
+.footer__cta { margin-top: 24px; display: inline-flex; }
+
+.footer__social { list-style: none; display: flex; gap: 10px; margin-top: 24px; }
+.footer__social a {
+  display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%;
+  border: 1px solid rgba(247, 244, 236, .16); color: rgba(247, 244, 236, .8);
+  transition: color .2s ease, border-color .2s ease, background-color .2s ease, transform .2s ease;
+}
+.footer__social a:hover { color: var(--ink); background: var(--gold); border-color: var(--gold); transform: translateY(-2px); }
+.footer__social svg { width: 17px; height: 17px; fill: currentColor; stroke: none; }
+
+.footer__bottom {
+  display: flex; flex-wrap: wrap; gap: 8px 28px; justify-content: space-between;
+  margin-top: 56px; padding-top: 24px; border-top: 1px solid rgba(247, 244, 236, .08); font-size: 12.5px;
+}
+.footer__bottom a { text-decoration: none; color: rgba(247, 244, 236, .7); }
+.footer__bottom a:hover { color: var(--gold); }
+
+@media (max-width: 900px) { .footer__grid { grid-template-columns: 1fr 1fr; gap: 40px; } .footer__col--brand { grid-column: 1 / -1; max-width: none; } }
+@media (max-width: 560px) { .footer__grid { grid-template-columns: 1fr; gap: 34px; } .footer__bottom { margin-top: 40px; } }
 
 /* ---------- Floating button ---------- */
 .fab {
