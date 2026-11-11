@@ -12,7 +12,9 @@
   Cache-Control: public, max-age=604800, stale-while-revalidate=86400
 /vendor/*
   Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+# The page and its CSS/JS ship together: a stale stylesheet with fresh HTML
+# breaks the layout, so these revalidate on every visit (ETag -> 304, no body).
 /*.css
-  Cache-Control: public, max-age=86400, stale-while-revalidate=86400
+  Cache-Control: public, max-age=0, must-revalidate
 /*.js
-  Cache-Control: public, max-age=86400, stale-while-revalidate=86400
+  Cache-Control: public, max-age=0, must-revalidate
