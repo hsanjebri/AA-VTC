@@ -298,7 +298,14 @@ jobs:
             -H 'User-Agent: Mozilla/5.0 (CI AA-VTC)' \
             -d '{"origin":{"lat":49.4944,"lng":0.1079},"destination":{"lat":49.1771,"lng":-0.4573}}')
           echo "POST /api/fare → $CODE"
-          test "$CODE" = "200" || { echo "::error::fare estimator is down (HTTP $CODE)"; exit 1; }
+          # 502/503/504 means our Worker is alive and correctly reporting that the
+          # IGN Géoplateforme upstream is unavailable. The page degrades to a
+          # WhatsApp quote request, so that is a warning, not a failed deployment.
+          case "$CODE" in
+            200) echo "✔ estimator answered" ;;
+            502|503|504) echo "::warning::IGN upstream unavailable (HTTP $CODE) — estimator degraded, site otherwise healthy" ;;
+            *) echo "::error::fare estimator is broken (HTTP $CODE)"; exit 1 ;;
+          esac
 
       - name: Smoke test — API rejects automated clients
         run: |
