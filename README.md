@@ -1,4 +1,4 @@
-# AA-VTC — Anywhere, Anytime.
+# EJ-VTC — Anywhere, Anytime.
 
 [![CI/CD Pipeline](https://github.com/hsanjebri/AA-VTC/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/hsanjebri/AA-VTC/actions/workflows/ci-cd.yml)
 

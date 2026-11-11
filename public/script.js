@@ -3,7 +3,7 @@
 
   const WA_NUMBER = '33652807488';
   const WA_DEFAULT =
-    'Bonjour AJ-VTC, je souhaite réserver un trajet.\n' +
+    'Bonjour EJ-VTC, je souhaite réserver un trajet.\n' +
     'Date : \nHeure : \nLieu de prise en charge : \nDestination : \nNombre de passagers : ';
 
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');

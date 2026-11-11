@@ -1,4 +1,4 @@
-// Unit tests — pricing: the AJ-VTC business rules, with no network and no database.
+// Unit tests — pricing: the EJ-VTC business rules, with no network and no database.
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import {

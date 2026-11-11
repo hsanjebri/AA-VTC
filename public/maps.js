@@ -121,7 +121,7 @@ import { matchPlaces, rankScore } from './places.js';
       } catch (err) {
         if (err.name === 'AbortError') return;
         // Service down: still offer the curated places; the field also works as free text (the server geocodes it).
-        console.warn('[AJ-VTC] Suggestions indisponibles :', err);
+        console.warn('[EJ-VTC] Suggestions indisponibles :', err);
         if (document.activeElement !== this.input) return;
         this.items = toSuggestions([], query);
         this.render();
@@ -276,7 +276,7 @@ import { matchPlaces, rankScore } from './places.js';
       routeMap.invalidateSize();
       routeMap.fitBounds(line.getBounds(), { padding: [34, 34] });
     } catch (err) {
-      console.warn('[AJ-VTC] Carte de l\'itinéraire indisponible :', err);
+      console.warn('[EJ-VTC] Carte de l\'itinéraire indisponible :', err);
       frame.hidden = true;
     }
   }
@@ -354,7 +354,7 @@ import { matchPlaces, rankScore } from './places.js';
         link.rel = 'noopener';
         link.textContent = `Réserver le forfait ${f.label}`;
         link.href = waLink([
-          `Bonjour AJ-VTC, je souhaite réserver le forfait ${f.label} (${eur.format(f.price)} HT par trajet).`,
+          `Bonjour EJ-VTC, je souhaite réserver le forfait ${f.label} (${eur.format(f.price)} HT par trajet).`,
           ...tripLines(),
           'Date : ', 'Heure : ', 'Nombre de passagers : ',
         ].join('\n'));
@@ -380,7 +380,7 @@ import { matchPlaces, rankScore } from './places.js';
         link.rel = 'noopener';
         link.textContent = `Réserver la mise à disposition ${f.name}`;
         link.href = waLink([
-          `Bonjour AJ-VTC, je souhaite réserver la mise à disposition ${f.name} (${f.hours} h, ${forfaitPrice}, ${f.includedKm} km inclus).`,
+          `Bonjour EJ-VTC, je souhaite réserver la mise à disposition ${f.name} (${f.hours} h, ${forfaitPrice}, ${f.includedKm} km inclus).`,
           ...tripLines(),
           'Date : ', 'Heure : ', 'Nombre de passagers : ',
         ].join('\n'));
@@ -389,7 +389,7 @@ import { matchPlaces, rankScore } from './places.js';
 
       const bookBtn = document.getElementById('fare-book');
       bookBtn.href = waLink([
-        'Bonjour AJ-VTC, je souhaite réserver ce trajet :',
+        'Bonjour EJ-VTC, je souhaite réserver ce trajet :',
         ...tripLines(),
         `Distance : ${km.format(q.distanceKm)} km (environ ${formatDuration(q.durationMin)})`,
         q.airportForfait?.cheaper
@@ -413,7 +413,7 @@ import { matchPlaces, rankScore } from './places.js';
         ? 'Page ouverte en fichier local : l\'estimation a besoin du serveur. Lancez « npm run dev » puis ouvrez http://localhost:3000.'
         : messages[code] || 'L\'estimation en ligne est momentanément indisponible. Envoyez-nous votre trajet, nous vous répondons avec un tarif.';
       document.getElementById('fare-ask').href = waLink([
-        'Bonjour AJ-VTC, pouvez-vous m\'indiquer le tarif de ce trajet ?',
+        'Bonjour EJ-VTC, pouvez-vous m\'indiquer le tarif de ce trajet ?',
         ...tripLines(),
         'Date : ', 'Heure : ', 'Nombre de passagers : ',
       ].join('\n'));
@@ -554,7 +554,7 @@ import { matchPlaces, rankScore } from './places.js';
         resizeTimer = setTimeout(() => { map.invalidateSize(); fit(); }, 200);
       });
     } catch (err) {
-      console.warn('[AJ-VTC] Carte indisponible :', err);
+      console.warn('[EJ-VTC] Carte indisponible :', err);
       // The styled fallback panel stays visible.
     }
   }
