@@ -9,6 +9,23 @@
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const root = document.documentElement;
 
+  /* ---------- Preloader ---------- */
+  // Clear it as soon as the first hero photo is painted; the CSS keeps a 2.5 s
+  // backstop so a slow or failed image can never leave a visitor staring at it.
+  const preloader = document.getElementById('preloader');
+  if (preloader) {
+    const clear = () => preloader.classList.add('is-done');
+    const firstSlide = document.querySelector('.slide.is-active img');
+    if (firstSlide && !firstSlide.complete) {
+      firstSlide.addEventListener('load', clear, { once: true });
+      firstSlide.addEventListener('error', clear, { once: true });
+    } else {
+      clear();
+    }
+    window.addEventListener('load', clear, { once: true });
+    preloader.addEventListener('animationend', () => preloader.remove(), { once: true });
+  }
+
   /* ---------- WhatsApp links ---------- */
   document.querySelectorAll('[data-wa]').forEach((el) => {
     const custom = el.getAttribute('data-wa');

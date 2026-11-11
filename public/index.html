@@ -24,7 +24,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..600&family=Inter:wght@400;500;600&display=swap">
-  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* Critique : l'écran de chargement ne doit jamais s'afficher sans style. */
+    .preloader{position:fixed;inset:0;z-index:9999;display:grid;place-content:center;justify-items:center;gap:22px;background:#0B1E3D;animation:preloaderOut .6s ease 2.5s forwards}
+    .preloader.is-done{animation-delay:0s}
+    @keyframes preloaderOut{to{opacity:0;visibility:hidden}}
+  </style>
+  <link rel="stylesheet" href="styles.css?v=2">
 
   <script>document.documentElement.classList.add('js');</script>
 
@@ -89,6 +95,16 @@
   </script>
 </head>
 <body>
+  <!-- Écran de chargement. Il disparaît dès que la page est prête ; une animation
+       CSS le retire de toute façon au bout de 2,5 s, même si le script échoue. -->
+  <div class="preloader" id="preloader" role="status" aria-label="Chargement du site">
+    <div class="preloader__mark" aria-hidden="true">
+      <span class="preloader__ring"></span>
+      <span class="preloader__letters">EJ</span>
+    </div>
+    <span class="preloader__text" aria-hidden="true">Anywhere, Anytime.</span>
+  </div>
+
   <a class="skip-link" href="#main">Aller au contenu</a>
 
   <!-- ============ NAVIGATION ============ -->
@@ -772,7 +788,7 @@
     <span class="fab__label">Réserver</span>
   </a>
 
-  <script src="script.js" defer></script>
+  <script src="script.js?v=2" defer></script>
   <script type="module" src="maps.js"></script>
 </body>
 </html>

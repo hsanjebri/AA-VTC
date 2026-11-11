@@ -644,6 +644,40 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round
 @media (max-width: 900px) { .footer__grid { grid-template-columns: 1fr 1fr; gap: 40px; } .footer__col--brand { grid-column: 1 / -1; max-width: none; } }
 @media (max-width: 560px) { .footer__grid { grid-template-columns: 1fr; gap: 34px; } .footer__bottom { margin-top: 40px; } }
 
+/* ---------- Preloader ---------- */
+.preloader {
+  position: fixed; inset: 0; z-index: 9999;
+  display: grid; place-content: center; justify-items: center; gap: 22px;
+  background: var(--navy);
+  /* Safety net: the overlay clears itself even if JavaScript never runs. */
+  animation: preloaderOut .6s var(--ease) 2.5s forwards;
+}
+.preloader.is-done { animation-delay: 0s; }
+
+.preloader__mark { position: relative; display: grid; place-items: center; width: 86px; height: 86px; }
+.preloader__ring {
+  position: absolute; inset: 0;
+  border: 2px solid rgba(201, 162, 75, .18);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+.preloader__letters {
+  font-family: var(--serif); font-size: 1.6rem; font-weight: 600;
+  color: var(--gold); letter-spacing: .02em;
+}
+.preloader__text {
+  font-family: var(--serif); font-style: italic; font-size: .95rem;
+  color: rgba(247, 244, 236, .5); letter-spacing: .03em;
+}
+
+@keyframes preloaderOut { to { opacity: 0; visibility: hidden; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .preloader { animation-duration: .01s; animation-delay: .3s; }
+  .preloader__ring { animation: none; border-top-color: rgba(201, 162, 75, .18); }
+}
+
 /* ---------- Floating button ---------- */
 .fab {
   position: fixed; z-index: 90;
