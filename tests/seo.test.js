@@ -27,7 +27,7 @@ describe('Page meta tags', () => {
 
   test('a unique, descriptive title', () => {
     const title = html.match(/<title>([^<]+)<\/title>/)[1];
-    assert.ok(title.includes('AA-VTC'), 'the title must name the business');
+    assert.ok(title.includes('AJ-VTC'), 'the title must name the business');
     assert.ok(title.length <= 70, `title too long for Google: ${title.length} characters`);
   });
 
@@ -78,7 +78,7 @@ describe('Structured data (JSON-LD)', () => {
   });
 
   test('identity, phone and email', () => {
-    assert.equal(ld.name, 'AA-VTC');
+    assert.equal(ld.name, 'AJ-VTC');
     assert.equal(ld.telephone, '+33652807488');
     assert.equal(ld.email, 'contact@aa-vtc.fr');
     assert.ok(ld.url.startsWith(CANONICAL));

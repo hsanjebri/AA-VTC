@@ -1,4 +1,4 @@
-// Key destinations for AA-VTC, shared by the page (suggestions) and /api/fare (free-text addresses).
+// Key destinations for AJ-VTC, shared by the page (suggestions) and /api/fare (free-text addresses).
 // The public geocoder ranks landmarks poorly (e.g. "Mont-Saint-Michel" → a summit in Savoie), so these come first.
 // Coordinates checked against IGN Géoplateforme where it returns the place.
 
