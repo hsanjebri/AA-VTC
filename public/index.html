@@ -51,6 +51,17 @@
     "priceRange": "€€",
     "currenciesAccepted": "EUR",
     "paymentAccepted": "Carte bancaire, Espèces",
+    "geo": {
+      "@type": "GeoCoordinates",
+      "latitude": 49.4944,
+      "longitude": 0.1079
+    },
+    "serviceArea": {
+      "@type": "GeoCircle",
+      "geoMidpoint": { "@type": "GeoCoordinates", "latitude": 49.4944, "longitude": 0.1079 },
+      "geoRadius": 150000
+    },
+    "knowsLanguage": ["fr", "en"],
     "areaServed": [
       { "@type": "City", "name": "Le Havre" },
       { "@type": "AdministrativeArea", "name": "Normandie" },
@@ -95,6 +106,79 @@
     }
   }
   </script>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "@id": "https://ej-vtc.fr/#faq",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Combien coûte un VTC entre Le Havre et l'aéroport de Roissy (CDG) ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Le trajet Le Havre → Paris Roissy est au forfait : 410 € HT, kilométrage inclus, TVA 10 %. Le prix est annoncé à la réservation et ne change pas selon le trafic. Pour Orly, le forfait est de 376 € HT."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Quel est le tarif d'un VTC au Havre pour un trajet local ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Les trajets de proximité sont facturés 1,80 € HT par kilomètre parcouru, avec un minimum de 9,50 € HT (TVA 10 %). L'estimateur en ligne calcule la distance réelle par la route et affiche le prix immédiatement. Des frais de prise en charge supplémentaires peuvent éventuellement s'appliquer."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Faut-il réserver à l'avance ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "La réservation à l'avance est conseillée, surtout pour un vol tôt le matin ou un train. Nous répondons 24h/24 et 7j/7 par WhatsApp ou par téléphone au +33 6 52 80 74 88, et nous prenons aussi les demandes de dernière minute selon les disponibilités."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Desservez-vous les croisières au port du Havre ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Oui. Nous assurons les transferts depuis et vers le terminal croisière du Havre, vers les gares, les hôtels et les aéroports de Paris, Deauville et Caen. Le chauffeur attend à l'arrivée avec une pancarte si vous le souhaitez."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Quels moyens de paiement acceptez-vous ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Carte bancaire et espèces. Une facture est remise sur demande, utile pour les déplacements professionnels."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Proposez-vous des circuits touristiques en Normandie ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Oui : plages du Débarquement, Mont Saint-Michel, Étretat, Honfleur, châteaux de la Loire. Le circuit Mont Saint-Michel dure environ 8 heures à 620 € HT, kilométrage inclus (TVA 10 %). Les circuits D-Day et châteaux de la Loire sont établis sur devis."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Combien de passagers et de bagages pouvez-vous prendre ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "La berline accueille jusqu'à 4 passagers avec leurs bagages. Pour un groupe plus important ou un volume de bagages inhabituel, indiquez-le à la réservation afin que nous adaptions le véhicule."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Dans quelles villes intervenez-vous autour du Havre ?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Le Havre, Honfleur, Étretat, Deauville, Trouville, Fécamp, Rouen, Caen et toute la Normandie — et partout en France pour les longues distances."
+      }
+    }
+  ]
+}
+  </script>
 </head>
 <body>
   <!-- Écran de chargement. Il disparaît dès que la page est prête ; une animation
@@ -123,6 +207,7 @@
           <li><a href="#circuits">Circuits</a></li>
           <li><a href="#tarifs">Tarifs</a></li>
           <li><a href="#estimation">Estimation</a></li>
+          <li><a href="#faq">FAQ</a></li>
           <li><a href="#contact">Contact</a></li>
         </ul>
         <a class="btn btn--gold btn--sm nav__menu-cta" data-wa href="https://wa.me/33652807488">Réserver maintenant</a>
@@ -607,6 +692,60 @@
       </div>
     </section>
 
+
+    <!-- ============ QUESTIONS FRÉQUENTES ============ -->
+    <section class="section section--white faq" id="faq" aria-labelledby="faq-title">
+      <div class="container">
+        <header class="section-head reveal">
+          <p class="eyebrow"><span class="eyebrow__rule" aria-hidden="true"></span>Questions fréquentes</p>
+          <h2 class="section-title" id="faq-title">Tout ce qu'on nous demande, <em>avant de monter.</em></h2>
+          <p class="section-lead">Tarifs, réservation, aéroports et circuits : les réponses en clair. Une autre question ? Écrivez-nous sur WhatsApp, nous répondons vite.</p>
+        </header>
+
+        <div class="faq__list">
+          <details class="faq__item" open>
+            <summary class="faq__q">Combien coûte un VTC entre Le Havre et l'aéroport de Roissy (CDG) ?</summary>
+            <div class="faq__a"><p>Le trajet Le Havre → Paris Roissy est au forfait : 410 € HT, kilométrage inclus, TVA 10 %. Le prix est annoncé à la réservation et ne change pas selon le trafic. Pour Orly, le forfait est de 376 € HT.</p></div>
+          </details>
+          <details class="faq__item">
+            <summary class="faq__q">Quel est le tarif d'un VTC au Havre pour un trajet local ?</summary>
+            <div class="faq__a"><p>Les trajets de proximité sont facturés 1,80 € HT par kilomètre parcouru, avec un minimum de 9,50 € HT (TVA 10 %). L'estimateur en ligne calcule la distance réelle par la route et affiche le prix immédiatement. Des frais de prise en charge supplémentaires peuvent éventuellement s'appliquer.</p></div>
+          </details>
+          <details class="faq__item">
+            <summary class="faq__q">Faut-il réserver à l'avance ?</summary>
+            <div class="faq__a"><p>La réservation à l'avance est conseillée, surtout pour un vol tôt le matin ou un train. Nous répondons 24h/24 et 7j/7 par WhatsApp ou par téléphone au +33 6 52 80 74 88, et nous prenons aussi les demandes de dernière minute selon les disponibilités.</p></div>
+          </details>
+          <details class="faq__item">
+            <summary class="faq__q">Desservez-vous les croisières au port du Havre ?</summary>
+            <div class="faq__a"><p>Oui. Nous assurons les transferts depuis et vers le terminal croisière du Havre, vers les gares, les hôtels et les aéroports de Paris, Deauville et Caen. Le chauffeur attend à l'arrivée avec une pancarte si vous le souhaitez.</p></div>
+          </details>
+          <details class="faq__item">
+            <summary class="faq__q">Quels moyens de paiement acceptez-vous ?</summary>
+            <div class="faq__a"><p>Carte bancaire et espèces. Une facture est remise sur demande, utile pour les déplacements professionnels.</p></div>
+          </details>
+          <details class="faq__item">
+            <summary class="faq__q">Proposez-vous des circuits touristiques en Normandie ?</summary>
+            <div class="faq__a"><p>Oui : plages du Débarquement, Mont Saint-Michel, Étretat, Honfleur, châteaux de la Loire. Le circuit Mont Saint-Michel dure environ 8 heures à 620 € HT, kilométrage inclus (TVA 10 %). Les circuits D-Day et châteaux de la Loire sont établis sur devis.</p></div>
+          </details>
+          <details class="faq__item">
+            <summary class="faq__q">Combien de passagers et de bagages pouvez-vous prendre ?</summary>
+            <div class="faq__a"><p>La berline accueille jusqu'à 4 passagers avec leurs bagages. Pour un groupe plus important ou un volume de bagages inhabituel, indiquez-le à la réservation afin que nous adaptions le véhicule.</p></div>
+          </details>
+          <details class="faq__item">
+            <summary class="faq__q">Dans quelles villes intervenez-vous autour du Havre ?</summary>
+            <div class="faq__a"><p>Le Havre, Honfleur, Étretat, Deauville, Trouville, Fécamp, Rouen, Caen et toute la Normandie — et partout en France pour les longues distances.</p></div>
+          </details>
+        </div>
+
+        <p class="faq__cta">
+          <a class="btn btn--gold" data-wa="Bonjour EJ-VTC, j'ai une question avant de réserver." href="https://wa.me/33652807488">
+            Poser une question sur WhatsApp
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+        </p>
+      </div>
+    </section>
+
     <!-- ============ PARTENAIRE ============ -->
     <section class="section section--navy partner" id="partenaire" aria-labelledby="partner-title">
       <div class="container partner__grid">
@@ -758,6 +897,7 @@
             <li><a href="#forfaits">Mise à disposition</a></li>
             <li><a href="#circuits">Circuits touristiques</a></li>
             <li><a href="#tarifs">Grille tarifaire</a></li>
+            <li><a href="#faq">Questions fréquentes</a></li>
           </ul>
         </nav>
 
