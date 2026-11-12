@@ -4,12 +4,13 @@ import fare from './api/fare.js';
 
 const ROUTES = { '/api/fare': fare };
 
-// Transition : les deux domaines servent le site. ej-vtc.fr ne devient
-// canonique qu'une fois sa zone active sur Cloudflare et la délégation
-// propagée — rediriger avant cela enverrait les visiteurs sur une page
-// de parking OVH.
-const CANONICAL_HOST = 'aa-vtc.fr';
+// Une seule adresse canonique : https://ej-vtc.fr
+// L'ancien domaine n'est pas abandonné — il redirige en 301, ce qui transmet
+// à ej-vtc.fr le référencement acquis par aa-vtc.fr.
+const CANONICAL_HOST = 'ej-vtc.fr';
 const REDIRECT_HOSTS = new Set([
+  'www.ej-vtc.fr',
+  'aa-vtc.fr',
   'www.aa-vtc.fr',
   'aa-vtc.com',
   'www.aa-vtc.com',
