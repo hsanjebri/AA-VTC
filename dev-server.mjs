@@ -68,7 +68,7 @@ http.createServer(async (req, res) => {
     res.end('Not found');
   }
 }).listen(PORT, () => {
-  console.log(`AA-VTC → http://localhost:${PORT}`);
+  console.log(`EJ-VTC → http://localhost:${PORT}`);
   const ready = (name) => (process.env[name] ? 'OK' : 'manquant');
   console.log(`Base : ${process.env.DATABASE_URL ? 'Neon' : 'PGlite (local)'} · Admin : hash ${ready('ADMIN_PASSWORD_HASH')}, secret ${ready('SESSION_SECRET')}`);
 });

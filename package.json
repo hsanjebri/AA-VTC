@@ -2,7 +2,7 @@
   "name": "aa-vtc",
   "private": true,
   "type": "module",
-  "description": "AA-VTC — site statique + Worker Cloudflare (estimation de tarif)",
+  "description": "EJ-VTC — site statique + Worker Cloudflare (estimation de tarif)",
   "scripts": {
     "dev": "node dev-server.mjs",
     "preview": "wrangler dev",

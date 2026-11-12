@@ -1,4 +1,4 @@
-// Single source of truth for AA-VTC fares. Files prefixed with "_" are not exposed as routes by Vercel.
+// Single source of truth for EJ-VTC fares. Files prefixed with "_" are not exposed as routes by Vercel.
 // All prices are HT (hors taxes).
 
 // Transfert local
