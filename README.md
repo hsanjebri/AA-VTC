@@ -12,7 +12,7 @@ d'**IGN Géoplateforme** (service public gratuit). Le site ne stocke rien.
 
 | Chemin | Rôle |
 |---|---|
-| `public/` | **Tout ce qui est publié** : page, styles, scripts, images, `_headers`, `robots.txt`, `sitemap.xml` |
+| `public/` | **Tout ce qui est publié** : pages (`index`, `mentions-legales`, `404`), styles, scripts, images, `_headers`, `robots.txt`, `sitemap.xml`, `site.webmanifest`, `.well-known/security.txt` |
 | `worker.js` | Entrée Cloudflare : redirections canoniques, en-têtes de sécurité, route `/api/fare` |
 | `api/fare.js` | Estimation : géocodage + itinéraire IGN, puis tarif |
 | `api/_lib/pricing.js` | Tarifs et TVA (source unique) |
@@ -28,7 +28,7 @@ Le code serveur est **hors de `public/`** : il ne peut pas être servi comme fic
 npm run dev       # http://localhost:3000  — serveur Node
 npm run preview   # http://localhost:8787  — vrai runtime Workers
 npm run lint      # syntaxe de tous les scripts + configuration
-npm test          # 63 tests unitaires (tarifs, anti-abus, SEO)
+npm test          # 69 tests unitaires (tarifs, anti-abus, SEO, pages légales)
 npm run deploy    # déploiement Cloudflare
 ```
 
@@ -97,3 +97,15 @@ Prix HT. Transfert local : 1,80 €/km, minimum 9,50 €, **TVA 10 %**.
 Mise à disposition : 1 h/60 €, 4 h/300 €, 8 h/580 € — **TVA 20 %**, km supplémentaire 0,90 € (TVA 10 %).
 Forfaits aéroports au départ du Havre (Orly 376, Roissy 410, Caen 120, Deauville 45) et circuits :
 kilométrage inclus, **TVA 10 %**. L'estimateur propose automatiquement le forfait quand il s'applique.
+
+## Pages légales
+
+`public/mentions-legales.html` est **obligatoire** pour un site commercial français
+(article 6-III de la LCEN). Les champs surlignés en jaune sur la page
+(`À COMPLÉTER`) doivent être renseignés avant toute exploitation : raison sociale,
+SIRET, numéro d'inscription au registre VTC (EVTC), assurance RC professionnelle
+et médiateur de la consommation.
+
+`public/404.html` répond aux adresses inconnues (`not_found_handling: 404-page`
+dans `wrangler.jsonc`) et `.well-known/security.txt` donne un point de contact
+normalisé (RFC 9116) pour signaler une faille.
