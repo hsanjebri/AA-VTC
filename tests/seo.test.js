@@ -6,7 +6,7 @@ import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const PUBLIC = join(process.cwd(), 'public');
-const CANONICAL = 'https://aa-vtc.fr';
+const CANONICAL = 'https://ej-vtc.fr';
 const html = readFileSync(join(PUBLIC, 'index.html'), 'utf8');
 const robots = readFileSync(join(PUBLIC, 'robots.txt'), 'utf8');
 const sitemap = readFileSync(join(PUBLIC, 'sitemap.xml'), 'utf8');
@@ -49,13 +49,13 @@ describe('Page meta tags', () => {
   });
 });
 
-describe('Canonical domain (no www)', () => {
+describe('Canonical domain (ej-vtc.fr, no www)', () => {
   test('the canonical tag points to https://aa-vtc.fr/', () => {
-    assert.match(html, /<link rel="canonical" href="https:\/\/aa-vtc\.fr\/">/);
+    assert.match(html, /<link rel="canonical" href="https:\/\/ej-vtc\.fr\/">/);
   });
 
   test('Open Graph and Twitter use the canonical domain', () => {
-    assert.match(html, /property="og:url" content="https:\/\/aa-vtc\.fr\/"/);
+    assert.match(html, /property="og:url" content="https:\/\/ej-vtc\.fr\/"/);
     assert.ok(html.includes('og:image'), 'og:image is missing');
     assert.ok(html.includes('twitter:card'), 'twitter:card is missing');
   });
@@ -63,8 +63,8 @@ describe('Canonical domain (no www)', () => {
   test('no www URL is left anywhere in the published site', () => {
     const offenders = filesIn(PUBLIC)
       .filter((f) => /\.(html|css|js|txt|xml|json)$/.test(f))
-      .filter((f) => readFileSync(f, 'utf8').includes('www.aa-vtc'));
-    assert.deepEqual(offenders, [], 'these files still contain www.aa-vtc');
+      .filter((f) => readFileSync(f, 'utf8').includes('www.ej-vtc') || readFileSync(f, 'utf8').includes('aa-vtc'));
+    assert.deepEqual(offenders, [], 'these files still reference the old domain or a www URL');
   });
 });
 
@@ -80,7 +80,7 @@ describe('Structured data (JSON-LD)', () => {
   test('identity, phone and email', () => {
     assert.equal(ld.name, 'EJ-VTC');
     assert.equal(ld.telephone, '+33652807488');
-    assert.equal(ld.email, 'contact@aa-vtc.fr');
+    assert.equal(ld.email, 'contact@ej-vtc.fr');
     assert.ok(ld.url.startsWith(CANONICAL));
   });
 

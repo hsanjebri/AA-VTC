@@ -4,8 +4,18 @@ import fare from './api/fare.js';
 
 const ROUTES = { '/api/fare': fare };
 
-const CANONICAL_HOST = 'aa-vtc.fr';
-const REDIRECT_HOSTS = new Set(['www.aa-vtc.fr', 'aa-vtc.com', 'www.aa-vtc.com']);
+const CANONICAL_HOST = 'ej-vtc.fr';
+// The former domain keeps working: every address 301s to the canonical one, so
+// links, bookmarks and the ranking earned on aa-vtc.fr follow the new name.
+const REDIRECT_HOSTS = new Set([
+  'www.ej-vtc.fr',
+  'ej-vtc.com',
+  'www.ej-vtc.com',
+  'aa-vtc.fr',
+  'www.aa-vtc.fr',
+  'aa-vtc.com',
+  'www.aa-vtc.com',
+]);
 
 // The site loads no third-party scripts; styles/fonts come from Google Fonts,
 // photos from Unsplash, maps and routing from IGN. Cloudflare injects its cookieless beacon.
@@ -80,7 +90,7 @@ export default {
 
     const url = new URL(request.url);
 
-    // One canonical address: https://aa-vtc.fr
+    // One canonical address: https://ej-vtc.fr
     const wrongHost = REDIRECT_HOSTS.has(url.hostname);
     const insecure = url.protocol === 'http:' || request.headers.get('cf-visitor')?.includes('"http"');
     if (wrongHost || insecure) {

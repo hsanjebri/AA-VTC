@@ -3,7 +3,9 @@
 [![CI/CD Pipeline](https://github.com/hsanjebri/AA-VTC/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/hsanjebri/AA-VTC/actions/workflows/ci-cd.yml)
 
 Site vitrine avec estimation de tarif en ligne, hébergé sur **Cloudflare Workers** (plan gratuit).
-`https://aa-vtc.fr` est l'adresse canonique ; `www` et les deux adresses en `.com` y sont redirigées (301).
+`https://ej-vtc.fr` est l'adresse canonique. Tout le reste y est redirigé en 301 :
+`www.ej-vtc.fr`, `ej-vtc.com`, `www.ej-vtc.com`, ainsi que l'ancien domaine
+`aa-vtc.fr`, `www.aa-vtc.fr`, `aa-vtc.com` et `www.aa-vtc.com`.
 
 Aucune clé d'API, aucune base de données, aucun compte : cartes, adresses et itinéraires viennent
 d'**IGN Géoplateforme** (service public gratuit). Le site ne stocke rien.

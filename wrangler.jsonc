@@ -5,11 +5,15 @@
   "compatibility_date": "2026-09-15",
   "compatibility_flags": ["nodejs_compat"],
   "observability": { "enabled": true },
-  "workers_dev": true, // keeps aa-vtc.aa-vtc.workers.dev alive as a fallback/test URL
+  "workers_dev": true, // keeps aa-vtc.workers.dev alive as a fallback/test URL
 
   // Cloudflare manages the DNS for these hostnames and issues the certificates.
   // Email records (MX, SPF/DKIM TXT, SRV, autoconfig CNAMEs) are untouched.
   "routes": [
+    { "pattern": "ej-vtc.fr", "custom_domain": true },
+    { "pattern": "www.ej-vtc.fr", "custom_domain": true },
+    { "pattern": "ej-vtc.com", "custom_domain": true },
+    { "pattern": "www.ej-vtc.com", "custom_domain": true },
     { "pattern": "aa-vtc.fr", "custom_domain": true },
     { "pattern": "www.aa-vtc.fr", "custom_domain": true },
     { "pattern": "aa-vtc.com", "custom_domain": true },
@@ -41,6 +45,6 @@
 
   // No secrets: the site stores nothing and calls only the free public IGN services.
   "vars": {
-    "ALLOWED_ORIGINS": "https://aa-vtc.fr,https://www.aa-vtc.fr"
+    "ALLOWED_ORIGINS": "https://ej-vtc.fr,https://www.ej-vtc.fr,https://aa-vtc.fr,https://www.aa-vtc.fr"
   }
 }
