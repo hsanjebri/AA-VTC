@@ -127,7 +127,12 @@ describe('Links and assets', () => {
     const refs = [...withoutComments.matchAll(/(?:src|href)="([^"]+)"/g)]
       .map((m) => m[1])
       .filter((u) => !/^(https?:|mailto:|tel:|data:|#|\/\/)/.test(u));
-    const missing = refs.filter((u) => !existsSync(join(PUBLIC, u.split('?')[0].replace(/^\//, ''))));
+    // Cloudflare serves "/x" from "x.html" (html_handling: auto-trailing-slash).
+    const resolves = (u) => {
+      const rel = u.split('?')[0].split('#')[0].replace(/^\//, '').replace(/\/$/, '');
+      return existsSync(join(PUBLIC, rel)) || existsSync(join(PUBLIC, `${rel}.html`));
+    };
+    const missing = refs.filter((u) => !resolves(u));
     assert.deepEqual(missing, [], 'assets not found in public/');
   });
 
@@ -159,5 +164,50 @@ describe('Security of the published content', () => {
     for (const forbidden of ['worker.js', 'package.json', 'wrangler.jsonc', '.dev.vars', 'api']) {
       assert.ok(!existsSync(join(PUBLIC, forbidden)), `${forbidden} must not be published`);
     }
+  });
+});
+
+describe('Legal pages and PWA files', () => {
+  test('the mentions légales page exists and is linked from the home page', () => {
+    assert.ok(existsSync(join(PUBLIC, 'mentions-legales.html')), 'mentions-legales.html is missing');
+    assert.ok(html.includes('href="/mentions-legales"'), 'the footer does not link to the legal notice');
+  });
+
+  test('the mentions légales page is indexable and declares its canonical URL', () => {
+    const legal = readFileSync(join(PUBLIC, 'mentions-legales.html'), 'utf8');
+    assert.match(legal, /<html[^>]+lang="fr"/);
+    assert.ok(legal.includes(`${CANONICAL}/mentions-legales`), 'canonical URL missing or off-domain');
+    assert.ok(!/content="noindex/.test(legal), 'the legal notice must stay indexable');
+  });
+
+  test('the sitemap lists the legal notice', () => {
+    assert.ok(sitemap.includes(`${CANONICAL}/mentions-legales`), 'the legal notice is absent from the sitemap');
+  });
+
+  test('the 404 page exists and is excluded from indexing', () => {
+    const notFound = join(PUBLIC, '404.html');
+    assert.ok(existsSync(notFound), 'Cloudflare is configured for 404-page but the file is missing');
+    const page = readFileSync(notFound, 'utf8');
+    assert.match(page, /content="noindex/, 'a 404 page must not be indexed');
+    assert.ok(page.includes('href="/"'), 'the 404 page must offer a way back home');
+  });
+
+  test('the web manifest is valid and referenced', () => {
+    const manifest = JSON.parse(readFileSync(join(PUBLIC, 'site.webmanifest'), 'utf8'));
+    assert.equal(manifest.short_name, 'EJ-VTC');
+    assert.equal(manifest.start_url, '/');
+    assert.ok(manifest.icons.length > 0, 'the manifest declares no icon');
+    for (const icon of manifest.icons) {
+      assert.ok(existsSync(join(PUBLIC, icon.src.replace(/^\//, ''))), `missing icon: ${icon.src}`);
+    }
+    assert.ok(html.includes('rel="manifest"'), 'the page does not reference the manifest');
+  });
+
+  test('security.txt follows RFC 9116 and has not expired', () => {
+    const txt = readFileSync(join(PUBLIC, '.well-known', 'security.txt'), 'utf8');
+    assert.match(txt, /^Contact:\s*\S+/m, 'a Contact field is required');
+    const expires = txt.match(/^Expires:\s*(\S+)/m);
+    assert.ok(expires, 'an Expires field is required');
+    assert.ok(new Date(expires[1]) > new Date(), 'security.txt has expired');
   });
 });
