@@ -12,8 +12,8 @@
   "routes": [
     { "pattern": "ej-vtc.fr", "custom_domain": true },
     { "pattern": "www.ej-vtc.fr", "custom_domain": true },
-    { "pattern": "ej-vtc.com", "custom_domain": true },
-    { "pattern": "www.ej-vtc.com", "custom_domain": true },
+    // ej-vtc.com : à ajouter une fois la zone créée sur Cloudflare (DNSSEC à
+    // désactiver d'abord chez OVH, une opération « DS records » y est active).
     { "pattern": "aa-vtc.fr", "custom_domain": true },
     { "pattern": "www.aa-vtc.fr", "custom_domain": true },
     { "pattern": "aa-vtc.com", "custom_domain": true },
