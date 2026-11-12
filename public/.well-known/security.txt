@@ -1,0 +1,6 @@
+# Signalement d'une vulnérabilité sur https://aa-vtc.fr — RFC 9116
+Contact: mailto:contact@aa-vtc.fr
+Contact: https://wa.me/33652807488
+Expires: 2027-11-12T00:00:00.000Z
+Preferred-Languages: fr, en
+Canonical: https://aa-vtc.fr/.well-known/security.txt
