@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Page introuvable — EJ-VTC</title>
+  <meta name="description" content="Cette page n'existe pas. Revenez à l'accueil EJ-VTC ou réservez directement votre chauffeur privé au Havre et en Normandie.">
+  <meta name="robots" content="noindex, follow">
+  <meta name="theme-color" content="#0B1E3D">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <style>
+    :root { --navy:#0B1E3D; --gold:#C8A24A; --paper:#F7F5F1; }
+    *,*::before,*::after { box-sizing:border-box; }
+    body {
+      margin:0; min-height:100vh; display:grid; place-content:center; justify-items:center;
+      gap:26px; padding:40px 16px; text-align:center;
+      background:var(--navy); color:var(--paper);
+      font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+    }
+    .mark {
+      display:inline-flex; align-items:center; gap:10px;
+      font-size:1.15rem; letter-spacing:.22em; text-transform:uppercase; color:var(--gold);
+    }
+    .mark b { font-weight:600; }
+    .mark i { display:block; width:28px; height:1px; background:currentColor; font-style:normal; }
+    h1 { margin:0; font-size:clamp(2.6rem,9vw,4.4rem); font-weight:300; letter-spacing:.04em; }
+    p { margin:0; max-width:46ch; line-height:1.65; color:#D9DEE8; }
+    .actions { display:flex; flex-wrap:wrap; gap:14px; justify-content:center; }
+    a.btn {
+      display:inline-block; padding:14px 26px; border-radius:2px; text-decoration:none;
+      font-size:.82rem; letter-spacing:.14em; text-transform:uppercase; transition:opacity .2s;
+    }
+    a.btn:hover { opacity:.82; }
+    .btn--gold { background:var(--gold); color:var(--navy); font-weight:600; }
+    .btn--ghost { border:1px solid rgba(247,245,241,.35); color:var(--paper); }
+  </style>
+</head>
+<body>
+  <a class="mark" href="/" aria-label="EJ-VTC, retour à l'accueil"><b>EJ</b><i></i><span>VTC</span></a>
+  <h1>404</h1>
+  <p>Cette page n'existe pas ou a été déplacée. Notre chauffeur, lui, connaît toujours la route : revenez à l'accueil ou réservez directement.</p>
+  <div class="actions">
+    <a class="btn btn--gold" href="/">Retour à l'accueil</a>
+    <a class="btn btn--ghost" href="https://wa.me/33652807488" target="_blank" rel="noopener">Réserver sur WhatsApp</a>
+  </div>
+</body>
+</html>
