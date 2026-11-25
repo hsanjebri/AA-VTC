@@ -1,5 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /api/
+# Outil interne (notes et devis) : pas destiné aux moteurs.
+Disallow: /note
 
 Sitemap: https://ej-vtc.fr/sitemap.xml

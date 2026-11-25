@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Note / devis — EJ-VTC</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#0B1E3D">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <style>
+    :root {
+      --navy: #0B1E3D; --gold: #C8A24A; --paper: #F7F5F1;
+      --ink: #1A2233; --muted: #5A6376; --line: rgba(11, 30, 61, .14);
+    }
+    * , *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--paper); color: var(--ink); line-height: 1.6;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    .wrap { max-width: 900px; margin: 0 auto; padding: 24px 16px 64px; }
+
+    header.top { background: var(--navy); color: var(--paper); padding: 20px 16px; }
+    header.top .wrap { padding: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .mark { display: inline-flex; align-items: center; gap: 9px; text-decoration: none;
+            letter-spacing: .22em; text-transform: uppercase; color: var(--gold); font-size: .95rem; }
+    .mark b { font-weight: 600; }
+    .mark i { display: block; width: 24px; height: 1px; background: currentColor; }
+    .top small { color: #AEB8CC; letter-spacing: .1em; text-transform: uppercase; font-size: .68rem; }
+
+    h1 { font-size: 1.5rem; font-weight: 500; margin: 28px 0 4px; }
+    .lead { color: var(--muted); margin: 0 0 24px; }
+
+    .warn {
+      background: #FFF4D6; border-left: 3px solid var(--gold); padding: 12px 14px;
+      font-size: .9rem; margin: 0 0 24px; border-radius: 2px;
+    }
+    .warn b { color: #8a6f28; }
+
+    fieldset { border: 1px solid var(--line); border-radius: 3px; padding: 18px; margin: 0 0 18px; }
+    legend { padding: 0 8px; font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--gold); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+    label { display: block; font-size: .78rem; color: var(--muted); margin-bottom: 5px; }
+    input, select, textarea {
+      width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: 2px;
+      font: inherit; font-size: .95rem; background: #fff; color: var(--ink);
+    }
+    input:focus, select:focus, textarea:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+    .hint { font-size: .74rem; color: var(--muted); margin-top: 5px; }
+
+    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 22px 0 36px; }
+    .btn {
+      display: inline-block; padding: 12px 22px; border: 0; border-radius: 2px; cursor: pointer;
+      font: inherit; font-size: .8rem; letter-spacing: .12em; text-transform: uppercase; text-decoration: none;
+    }
+    .btn--gold { background: var(--gold); color: var(--navy); font-weight: 600; }
+    .btn--line { background: #fff; color: var(--navy); border: 1px solid var(--navy); }
+    .btn:hover { opacity: .85; }
+
+    /* ---------- Le document ---------- */
+    .doc {
+      background: #fff; border: 1px solid var(--line); padding: 34px; border-radius: 3px;
+    }
+    .doc__head { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+    .doc__brand { font-size: 1.25rem; letter-spacing: .2em; text-transform: uppercase; color: var(--navy); font-weight: 600; }
+    .doc__issuer { font-size: .82rem; color: var(--muted); margin-top: 8px; white-space: pre-line; }
+    .doc__meta { text-align: right; font-size: .85rem; }
+    .doc__meta strong { display: block; font-size: 1.05rem; color: var(--navy); }
+    .doc__title {
+      margin: 26px 0 18px; padding-bottom: 8px; border-bottom: 2px solid var(--navy);
+      font-size: 1.1rem; letter-spacing: .14em; text-transform: uppercase; color: var(--navy);
+    }
+    .doc__client { font-size: .9rem; margin-bottom: 20px; }
+    .doc__client span { color: var(--muted); }
+    table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+    th { text-align: left; font-size: .7rem; letter-spacing: .12em; text-transform: uppercase;
+         color: var(--muted); border-bottom: 1px solid var(--line); padding: 0 0 8px; font-weight: 500; }
+    td { padding: 12px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+    td.num, th.num { text-align: right; white-space: nowrap; }
+    .totals { margin-top: 18px; margin-left: auto; width: min(320px, 100%); font-size: .92rem; }
+    .totals div { display: flex; justify-content: space-between; padding: 6px 0; }
+    .totals .ttc { border-top: 2px solid var(--navy); margin-top: 6px; padding-top: 10px;
+                   font-size: 1.15rem; font-weight: 600; color: var(--navy); }
+    .doc__foot { margin-top: 26px; padding-top: 16px; border-top: 1px solid var(--line);
+                 font-size: .76rem; color: var(--muted); white-space: pre-line; }
+    .todo { background: #FFF4D6; padding: 1px 5px; border-radius: 2px; }
+
+    @media print {
+      header.top, .no-print { display: none !important; }
+      body { background: #fff; }
+      .wrap { max-width: none; padding: 0; }
+      .doc { border: 0; padding: 0; }
+      @page { margin: 18mm; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="top no-print">
+  <div class="wrap">
+    <a class="mark" href="/" aria-label="EJ-VTC, retour à l'accueil"><b>EJ</b><i></i><span>VTC</span></a>
+    <small>Usage interne</small>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="no-print">
+    <h1>Note / devis client</h1>
+    <p class="lead">Remplissez, puis <strong>Imprimer → Enregistrer en PDF</strong> et envoyez par WhatsApp ou e-mail.</p>
+
+    <p class="warn">
+      <b>Obligation :</b> une note doit être remise au client <b>avant le paiement</b> dès 25 € TTC,
+      et en dessous de 25 € <b>si le client la demande</b> (arrêté du 3 octobre 1983).
+    </p>
+
+    <form id="form" autocomplete="off">
+      <fieldset>
+        <legend>Document</legend>
+        <div class="grid">
+          <div>
+            <label for="type">Type</label>
+            <select id="type">
+              <option value="NOTE">Note (après la course)</option>
+              <option value="DEVIS">Devis (avant la course)</option>
+            </select>
+          </div>
+          <div>
+            <label for="numero">Numéro</label>
+            <input id="numero" type="text" placeholder="2026-0001">
+            <p class="hint">S'incrémente tout seul à chaque document.</p>
+          </div>
+          <div>
+            <label for="dateDoc">Date du document</label>
+            <input id="dateDoc" type="date">
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Client</legend>
+        <div class="grid">
+          <div>
+            <label for="client">Nom du client</label>
+            <input id="client" type="text" placeholder="M. Dupont">
+          </div>
+          <div>
+            <label for="clientInfo">Société / adresse (facultatif)</label>
+            <input id="clientInfo" type="text" placeholder="Pour une note professionnelle">
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Course</legend>
+        <div class="grid">
+          <div>
+            <label for="dateCourse">Date de la course</label>
+            <input id="dateCourse" type="date">
+          </div>
+          <div>
+            <label for="heure">Heure de prise en charge</label>
+            <input id="heure" type="time">
+          </div>
+          <div>
+            <label for="depart">Lieu de départ</label>
+            <input id="depart" type="text" placeholder="Gare du Havre">
+          </div>
+          <div>
+            <label for="arrivee">Destination</label>
+            <input id="arrivee" type="text" placeholder="Aéroport de Deauville">
+          </div>
+          <div>
+            <label for="passagers">Passagers</label>
+            <input id="passagers" type="number" min="1" max="8" value="1">
+          </div>
+          <div>
+            <label for="paiement">Paiement</label>
+            <select id="paiement">
+              <option>Carte bancaire</option>
+              <option>Espèces</option>
+              <option>À régler</option>
+            </select>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Prestation et prix</legend>
+        <div class="grid">
+          <div>
+            <label for="prestation">Prestation</label>
+            <select id="prestation">
+              <option value="transfert|10">Transfert local — TVA 10 %</option>
+              <option value="forfait|10">Forfait aéroport / gare — TVA 10 %</option>
+              <option value="circuit|10">Circuit touristique — TVA 10 %</option>
+              <option value="miseadispo|20">Mise à disposition — TVA 20 %</option>
+            </select>
+          </div>
+          <div>
+            <label for="detail">Détail affiché</label>
+            <input id="detail" type="text" placeholder="29,2 km × 1,80 € HT">
+          </div>
+          <div>
+            <label for="prixHT">Prix HT (€)</label>
+            <input id="prixHT" type="number" min="0" step="0.01" placeholder="45.00">
+          </div>
+          <div>
+            <label for="supplementHT">Supplément HT (€, facultatif)</label>
+            <input id="supplementHT" type="number" min="0" step="0.01" placeholder="0.00">
+            <p class="hint">Prise en charge, attente, bagages…</p>
+          </div>
+          <div>
+            <label for="supplementLabel">Libellé du supplément</label>
+            <input id="supplementLabel" type="text" placeholder="Frais de prise en charge">
+          </div>
+        </div>
+      </fieldset>
+    </form>
+
+    <div class="actions">
+      <button class="btn btn--gold" type="button" id="print">Imprimer / PDF</button>
+      <a class="btn btn--line" id="wa" href="#" target="_blank" rel="noopener">Envoyer par WhatsApp</a>
+      <button class="btn btn--line" type="button" id="reset">Nouveau document</button>
+    </div>
+  </div>
+
+  <!-- ============ LE DOCUMENT ============ -->
+  <article class="doc" id="doc">
+    <div class="doc__head">
+      <div>
+        <div class="doc__brand">EJ&#8201;—&#8201;VTC</div>
+        <div class="doc__issuer" id="issuer"></div>
+      </div>
+      <div class="doc__meta">
+        <strong id="docType">NOTE</strong>
+        <span id="docNum"></span><br>
+        <span id="docDate"></span>
+      </div>
+    </div>
+
+    <h2 class="doc__title" id="docTitle">Note de transport</h2>
+
+    <p class="doc__client" id="docClient"></p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Prestation</th>
+          <th class="num">TVA</th>
+          <th class="num">Montant HT</th>
+        </tr>
+      </thead>
+      <tbody id="lines"></tbody>
+    </table>
+
+    <div class="totals">
+      <div><span>Total HT</span><span id="tHT"></span></div>
+      <div><span id="tTvaLabel">TVA</span><span id="tTVA"></span></div>
+      <div class="ttc"><span>Total TTC</span><span id="tTTC"></span></div>
+    </div>
+
+    <div class="doc__foot" id="foot"></div>
+  </article>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ------------------------------------------------------------------
+     IDENTITÉ DE L'ENTREPRISE — à remplir une seule fois.
+     Une note doit identifier l'entreprise : sans ces informations,
+     le document n'est pas conforme.
+     ------------------------------------------------------------------ */
+  const ENTREPRISE = {
+    raisonSociale: '',        // ex. "EJ-VTC" ou la raison sociale exacte
+    formeJuridique: '',       // ex. "Auto-entrepreneur"
+    adresse: '',              // ex. "12 rue Example, 76600 Le Havre"
+    siret: '',                // 14 chiffres
+    tva: '',                  // FR + 11 caractères, ou '' si franchise en base
+    evtc: '',                 // numéro d'inscription au registre VTC
+    telephone: '+33 6 52 80 74 88',
+    email: 'contact@ej-vtc.fr',
+    site: 'ej-vtc.fr',
+  };
+
+  const WA_NUMBER = '33652807488';
+  const euro = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });
+  const $ = (id) => document.getElementById(id);
+  const todo = (label) => `<span class="todo">[${label} à renseigner]</span>`;
+
+  /* ---------- Numérotation : suite continue, mémorisée localement ---------- */
+  function nextNumero() {
+    const year = new Date().getFullYear();
+    let seq = 1;
+    try {
+      const saved = JSON.parse(localStorage.getItem('ejvtc.numero') || 'null');
+      if (saved && saved.year === year) seq = saved.seq + 1;
+    } catch { /* stockage indisponible : on repart à 1 */ }
+    return `${year}-${String(seq).padStart(4, '0')}`;
+  }
+
+  function commitNumero(numero) {
+    const m = /^(\d{4})-(\d+)$/.exec(numero);
+    if (!m) return;
+    try {
+      localStorage.setItem('ejvtc.numero', JSON.stringify({ year: +m[1], seq: +m[2] }));
+    } catch { /* rien à faire */ }
+  }
+
+  const frDate = (value) => {
+    if (!value) return '';
+    const [y, m, d] = value.split('-');
+    return `${d}/${m}/${y}`;
+  };
+
+  function issuerBlock() {
+    const lines = [];
+    lines.push(ENTREPRISE.raisonSociale || todo('Raison sociale'));
+    if (ENTREPRISE.formeJuridique) lines.push(ENTREPRISE.formeJuridique);
+    lines.push(ENTREPRISE.adresse || todo('Adresse'));
+    lines.push(`SIRET : ${ENTREPRISE.siret || todo('SIRET')}`);
+    lines.push(`N° VTC : ${ENTREPRISE.evtc || todo('EVTC')}`);
+    if (ENTREPRISE.tva) lines.push(`TVA : ${ENTREPRISE.tva}`);
+    lines.push(`${ENTREPRISE.telephone} · ${ENTREPRISE.email}`);
+    return lines.join('\n');
+  }
+
+  function render() {
+    const type = $('type').value;
+    const isDevis = type === 'DEVIS';
+    const [, vatRate] = $('prestation').value.split('|');
+    const tva = Number(vatRate);
+
+    const prix = Number($('prixHT').value) || 0;
+    const supp = Number($('supplementHT').value) || 0;
+    const totalHT = prix + supp;
+    const montantTVA = Math.round(totalHT * tva) / 100;
+    const totalTTC = Math.round((totalHT + montantTVA) * 100) / 100;
+
+    // Contenu issu des constantes ci-dessus uniquement : pas de saisie utilisateur.
+    $('issuer').innerHTML = issuerBlock();
+    $('docType').textContent = isDevis ? 'DEVIS' : 'NOTE';
+    $('docNum').textContent = $('numero').value ? `n° ${$('numero').value}` : '';
+    $('docDate').textContent = frDate($('dateDoc').value);
+    $('docTitle').textContent = isDevis
+      ? 'Devis — transport de personnes avec chauffeur'
+      : 'Note — transport de personnes avec chauffeur';
+
+    const client = $('client').value.trim();
+    const clientInfo = $('clientInfo').value.trim();
+    $('docClient').innerHTML = client
+      ? `<span>Client :</span> <strong>${escapeHtml(client)}</strong>${clientInfo ? ' · ' + escapeHtml(clientInfo) : ''}`
+      : '<span>Client :</span> —';
+
+    const course = [
+      $('dateCourse').value ? `Le ${frDate($('dateCourse').value)}` : '',
+      $('heure').value ? `à ${$('heure').value}` : '',
+    ].filter(Boolean).join(' ');
+    const trajet = [$('depart').value.trim(), $('arrivee').value.trim()].filter(Boolean).join(' → ');
+    const detail = $('detail').value.trim();
+    const pax = Number($('passagers').value) || 1;
+
+    const label = $('prestation').selectedOptions[0].textContent.split('—')[0].trim();
+    const descr = [
+      `<strong>${escapeHtml(label)}</strong>`,
+      trajet ? escapeHtml(trajet) : '',
+      course ? escapeHtml(course) : '',
+      `${pax} passager${pax > 1 ? 's' : ''}`,
+      detail ? escapeHtml(detail) : '',
+    ].filter(Boolean).join('<br>');
+
+    let rows = `<tr><td>${descr}</td><td class="num">${tva} %</td><td class="num">${euro.format(prix)}</td></tr>`;
+    if (supp > 0) {
+      const suppLabel = $('supplementLabel').value.trim() || 'Supplément';
+      rows += `<tr><td>${escapeHtml(suppLabel)}</td><td class="num">${tva} %</td><td class="num">${euro.format(supp)}</td></tr>`;
+    }
+    $('lines').innerHTML = rows;
+
+    $('tHT').textContent = euro.format(totalHT);
+    $('tTvaLabel').textContent = `TVA ${tva} %`;
+    $('tTVA').textContent = euro.format(montantTVA);
+    $('tTTC').textContent = euro.format(totalTTC);
+
+    const foot = [];
+    if (isDevis) {
+      foot.push('Devis valable 30 jours. Prix ferme pour le trajet décrit ci-dessus.');
+      foot.push('Des frais de prise en charge supplémentaires peuvent éventuellement s’appliquer en cas de modification du trajet.');
+    } else {
+      foot.push(`Payé par ${$('paiement').value.toLowerCase()}.`);
+      foot.push('Note remise au client conformément à l’arrêté du 3 octobre 1983.');
+    }
+    if (!ENTREPRISE.siret) {
+      foot.push('⚠ Document incomplet : SIRET et numéro EVTC manquants.');
+    }
+    foot.push(`${ENTREPRISE.site} · ${ENTREPRISE.telephone}`);
+    $('foot').textContent = foot.join('\n');
+
+    // Lien WhatsApp avec le résumé
+    const resume = [
+      `${isDevis ? 'Devis' : 'Note'} EJ-VTC${$('numero').value ? ' n° ' + $('numero').value : ''}`,
+      trajet, course,
+      `Total : ${euro.format(totalTTC)} TTC (dont TVA ${tva} % : ${euro.format(montantTVA)})`,
+    ].filter(Boolean).join('\n');
+    $('wa').href = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(resume)}`;
+  }
+
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, (c) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  function init() {
+    const today = new Date().toISOString().slice(0, 10);
+    $('dateDoc').value = today;
+    $('dateCourse').value = today;
+    $('numero').value = nextNumero();
+    render();
+  }
+
+  document.getElementById('form').addEventListener('input', render);
+  document.getElementById('form').addEventListener('change', render);
+
+  $('print').addEventListener('click', () => {
+    commitNumero($('numero').value);
+    window.print();
+  });
+
+  $('reset').addEventListener('click', () => {
+    document.getElementById('form').reset();
+    init();
+  });
+
+  init();
+})();
+</script>
+</body>
+</html>

@@ -211,3 +211,36 @@ describe('Legal pages and PWA files', () => {
     assert.ok(new Date(expires[1]) > new Date(), 'security.txt has expired');
   });
 });
+
+describe('Internal note / quote tool', () => {
+  const note = readFileSync(join(PUBLIC, 'note.html'), 'utf8');
+
+  test('the page exists and stays out of search engines', () => {
+    assert.match(note, /content="noindex/, 'an internal tool must not be indexed');
+    assert.ok(robots.includes('Disallow: /note'), 'robots.txt must exclude /note');
+    assert.ok(!sitemap.includes('/note'), 'the tool must not be in the sitemap');
+  });
+
+  test('it is not linked from the public page', () => {
+    assert.ok(!html.includes('note.html') && !html.includes('href="/note"'),
+      'the tool is for the driver, not for visitors');
+  });
+
+  test('the legal VAT rates are offered', () => {
+    for (const rate of ['10', '20']) {
+      assert.ok(note.includes(`|${rate}"`), `VAT ${rate} % missing from the prestation list`);
+    }
+  });
+
+  test('a document carries the mentions a note requires', () => {
+    for (const field of ['siret', 'evtc', 'raisonSociale', 'adresse']) {
+      assert.ok(note.includes(field), `${field} missing from the issuer block`);
+    }
+    assert.ok(note.includes('3 octobre 1983'), 'the legal basis should be cited on the note');
+  });
+
+  test('missing identifiers are flagged rather than silently omitted', () => {
+    assert.ok(note.includes('Document incomplet'),
+      'the page must warn when SIRET/EVTC are not filled in');
+  });
+});
