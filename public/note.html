@@ -38,10 +38,12 @@
     .mark b { font-weight: 600; letter-spacing: .18em; }
     .mark i { display: block; width: 26px; height: 1px; background: currentColor; }
     .mark span { letter-spacing: .3em; font-size: .82rem; color: var(--paper); }
-    .topbar small {
-      color: #93A1BC; letter-spacing: .18em; text-transform: uppercase; font-size: .64rem;
-      border: 1px solid rgba(255,255,255,.16); padding: 4px 10px; border-radius: 999px;
+    .topnav { display: flex; gap: 8px; }
+    .topnav a {
+      color: var(--paper); text-decoration: none; font-size: .68rem; letter-spacing: .16em;
+      text-transform: uppercase; padding: 6px 12px; border: 1px solid rgba(255,255,255,.18); border-radius: 999px;
     }
+    .topnav a[aria-current] { background: var(--gold); color: var(--navy); border-color: var(--gold); font-weight: 600; }
 
     /* ---------- Mise en page ---------- */
     .shell { max-width: 1240px; margin: 0 auto; padding: 28px 20px 140px; }
@@ -214,7 +216,10 @@
 <header class="topbar">
   <div class="topbar__in">
     <a class="mark" href="/" aria-label="EJ-VTC, retour à l'accueil"><b>EJ</b><i></i><span>VTC</span></a>
-    <small>Outil interne</small>
+    <nav class="topnav">
+      <a href="/note" aria-current="page">Nouvelle note</a>
+      <a href="/journal">Journal</a>
+    </nav>
   </div>
 </header>
 
@@ -608,7 +613,63 @@
 
   $('form').addEventListener('input', render);
   $('form').addEventListener('change', render);
-  $('print').addEventListener('click', () => { commitNumero($('numero').value); window.print(); });
+  /* ---------- Enregistrement au journal ---------- */
+  const TOKEN_KEY = 'ejvtc.journalToken';
+  const journalToken = () => { try { return sessionStorage.getItem(TOKEN_KEY) || ''; } catch { return ''; } };
+
+  async function saveToJournal() {
+    const token = journalToken();
+    if (!token) return null;            // pas de clé sur cet appareil : on imprime quand même
+    const [kind, vat] = $('prestation').value.split('|');
+    const res = await fetch('/api/journal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        type: $('type').value,
+        dateDoc: $('dateDoc').value,
+        dateCourse: $('dateCourse').value,
+        heure: $('heure').value,
+        client: $('client').value,
+        clientInfo: $('clientInfo').value,
+        depart: $('depart').value,
+        arrivee: $('arrivee').value,
+        passagers: $('passagers').value,
+        prestation: kind,
+        detail: $('detail').value,
+        allerRetour: $('allerRetour').checked,
+        km: $('km').value || null,
+        prixHt: (Number($('prixHT').value) || 0) * ($('allerRetour').checked ? 2 : 1),
+        supplementHt: $('supplementHT').value,
+        supplementLabel: $('supplementLabel').value,
+        tauxTva: Number(vat),
+        paiement: $('paiement').value,
+      }),
+    });
+    if (!res.ok) throw new Error(res.status === 401 ? 'unauthorized' : 'server');
+    return res.json();
+  }
+
+  $('print').addEventListener('click', async () => {
+    const button = $('print');
+    button.disabled = true;
+    try {
+      const saved = await saveToJournal();
+      if (saved) {
+        // Le numéro vient du serveur : la suite reste continue même si on
+        // change de téléphone ou qu'on vide le cache.
+        $('numero').value = saved.numero;
+        render();
+      }
+    } catch (err) {
+      const message = err.message === 'unauthorized'
+        ? 'Clé du journal refusée : le document n’a pas été enregistré. Imprimer quand même ?'
+        : 'Journal indisponible : le document n’a pas été enregistré. Imprimer quand même ?';
+      if (!confirm(message)) { button.disabled = false; return; }
+    }
+    commitNumero($('numero').value);
+    button.disabled = false;
+    window.print();
+  });
   $('reset').addEventListener('click', () => {
     $('form').reset();
     for (const chip of $('presets').children) chip.setAttribute('aria-pressed', 'false');

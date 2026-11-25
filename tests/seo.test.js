@@ -244,3 +244,44 @@ describe('Internal note / quote tool', () => {
       'the page must warn when SIRET/EVTC are not filled in');
   });
 });
+
+describe('Journal des courses', () => {
+  const journal = readFileSync(join(PUBLIC, 'journal.html'), 'utf8');
+  const api = readFileSync(join(process.cwd(), 'api', 'journal.js'), 'utf8');
+  const note = readFileSync(join(PUBLIC, 'note.html'), 'utf8');
+
+  test('the journal page stays private', () => {
+    assert.match(journal, /content="noindex/);
+    assert.ok(robots.includes('Disallow: /journal'));
+    assert.ok(!sitemap.includes('/journal'));
+    assert.ok(!html.includes('/journal'), 'never linked from the public page');
+  });
+
+  test('the API refuses anything without a valid token', () => {
+    assert.ok(api.includes('authorized(request, env)'), 'every request must be checked');
+    assert.ok(api.includes('safeEqual'), 'token comparison must be constant-time');
+    assert.ok(api.includes("json({ error: 'unauthorized' }, 401)"));
+  });
+
+  test('no secret is committed', () => {
+    assert.ok(!/JOURNAL_TOKEN\s*=\s*['"][^'"]+['"]/.test(api), 'the token must come from env only');
+    assert.ok(!existsSync(join(process.cwd(), 'public', 'journal-token.txt')));
+  });
+
+  test('numbering is allocated server-side and protected by a unique index', () => {
+    const schema = readFileSync(join(process.cwd(), 'migrations', '0001_journal.sql'), 'utf8');
+    assert.ok(schema.includes('UNIQUE INDEX') && schema.includes('(annee, sequence)'),
+      'a unique index is what actually prevents duplicate numbers');
+    assert.ok(api.includes('MAX(sequence)'), 'the next number comes from the database');
+    assert.ok(note.includes('saved.numero'), 'the note must use the number the server allocated');
+  });
+
+  test('printing still works when the journal is unreachable', () => {
+    assert.ok(note.includes('Imprimer quand même'),
+      'a journal outage must never stop the driver handing the client a note');
+  });
+
+  test('only the two legal VAT rates can be stored', () => {
+    assert.ok(api.includes('body.tauxTva === 20 ? 20 : 10'));
+  });
+});

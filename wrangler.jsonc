@@ -31,6 +31,15 @@
     "run_worker_first": true
   },
 
+  // Journal des courses : notes et devis émis, numérotation continue.
+  "d1_databases": [
+    {
+      "binding": "JOURNAL",
+      "database_name": "ej-vtc-journal",
+      "database_id": "37440eac-cce0-475a-91a5-5e5b9f33f160"
+    }
+  ],
+
   // Edge rate limiting (counts across isolates, unlike an in-memory map).
   "unsafe": {
     "bindings": [

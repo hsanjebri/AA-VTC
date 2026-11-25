@@ -3,5 +3,6 @@ Allow: /
 Disallow: /api/
 # Outil interne (notes et devis) : pas destiné aux moteurs.
 Disallow: /note
+Disallow: /journal
 
 Sitemap: https://ej-vtc.fr/sitemap.xml

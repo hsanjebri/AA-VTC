@@ -93,6 +93,31 @@ Variable optionnelle `OVH_REMOTE_DIR` (défaut `/www`) pour le dossier distant.
 À activer dans le tableau de bord Cloudflare (gratuit, non scriptable) : **Bot Fight Mode**
 (Security → Bots) et **Always Use HTTPS** (SSL/TLS → Edge Certificates), mode SSL **Full (strict)**.
 
+## Journal des courses (outil interne)
+
+| Page | Rôle |
+|---|---|
+| `/note` | Émettre une note ou un devis, imprimer en PDF |
+| `/journal` | Historique, totaux du mois, export CSV |
+
+Les deux pages sont en `noindex`, exclues de `robots.txt` et jamais liées depuis
+le site public. L'API `/api/journal` exige un jeton (`JOURNAL_TOKEN`, secret
+Cloudflare) : **aucun mot de passe n'est stocké dans le dépôt**.
+
+**La numérotation est attribuée par le serveur**, pas par le navigateur : une
+suite continue sans trou est une obligation, et un compteur gardé dans le
+téléphone disparaît au premier vidage de cache. Un index unique
+`(annee, sequence)` empêche deux documents de porter le même numéro ; en cas de
+collision, l'enregistrement retente avec le numéro suivant.
+
+Si le journal est indisponible, l'impression reste possible après confirmation :
+une panne ne doit jamais empêcher de remettre sa note au client.
+
+```bash
+npx wrangler d1 execute ej-vtc-journal --remote --file=./migrations/0001_journal.sql
+npx wrangler secret put JOURNAL_TOKEN
+```
+
 ## Tarifs (`api/_lib/pricing.js`)
 
 Prix HT. Transfert local : 1,80 €/km, minimum 9,50 €, **TVA 10 %**.

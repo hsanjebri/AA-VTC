@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Journal des courses — EJ-VTC</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#0B1E3D">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..600&family=Inter:wght@400;500;600&display=swap">
+  <style>
+    :root {
+      --navy: #0B1E3D; --gold: #C8A24A; --gold-deep: #8a6f28;
+      --paper: #F7F4EC; --cream: #FBF9F4; --ink: #1A2233; --muted: #5A6376;
+      --line: rgba(11, 30, 61, .13);
+      --display: 'Fraunces', Georgia, serif; --sans: 'Inter', system-ui, sans-serif;
+      --shadow: 0 1px 2px rgba(11,30,61,.04), 0 12px 32px -12px rgba(11,30,61,.18);
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.6; }
+
+    .topbar { background: var(--navy); color: var(--paper); }
+    .topbar__in { max-width: 1240px; margin: 0 auto; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .mark { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--gold); }
+    .mark b { font-weight: 600; letter-spacing: .18em; }
+    .mark i { display: block; width: 26px; height: 1px; background: currentColor; }
+    .mark span { letter-spacing: .3em; font-size: .82rem; color: var(--paper); }
+    .topbar nav { display: flex; gap: 8px; }
+    .topbar nav a {
+      color: var(--paper); text-decoration: none; font-size: .68rem; letter-spacing: .16em;
+      text-transform: uppercase; padding: 6px 12px; border: 1px solid rgba(255,255,255,.18); border-radius: 999px;
+    }
+    .topbar nav a[aria-current] { background: var(--gold); color: var(--navy); border-color: var(--gold); font-weight: 600; }
+
+    .shell { max-width: 1240px; margin: 0 auto; padding: 28px 20px 60px; }
+    .eyebrow { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; font-size: .68rem; letter-spacing: .2em; text-transform: uppercase; color: var(--gold-deep); }
+    .eyebrow::before { content: ""; width: 26px; height: 1px; background: var(--gold); }
+    h1 { font-family: var(--display); font-weight: 400; font-size: clamp(1.6rem, 4vw, 2.1rem); margin: 0 0 22px; color: var(--navy); }
+    h1 em { font-style: italic; color: var(--gold-deep); }
+
+    /* ---------- Accès ---------- */
+    .gate { max-width: 440px; background: #fff; border: 1px solid var(--line); border-radius: 4px; padding: 26px; box-shadow: var(--shadow); }
+    .gate p { color: var(--muted); font-size: .9rem; margin: 0 0 16px; }
+    label { display: block; font-size: .74rem; color: var(--muted); margin-bottom: 6px; }
+    input, select {
+      width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 3px;
+      font: inherit; font-size: .95rem; background: var(--cream); color: var(--ink);
+    }
+    input:focus, select:focus { outline: none; border-color: var(--gold); background: #fff; box-shadow: 0 0 0 3px rgba(200,162,74,.18); }
+    .error { color: #9B2C2C; font-size: .85rem; margin: 10px 0 0; }
+
+    /* ---------- Totaux ---------- */
+    .totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 22px; }
+    .stat { background: #fff; border: 1px solid var(--line); border-radius: 4px; padding: 16px 18px; box-shadow: var(--shadow); }
+    .stat dt { font-size: .66rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+    .stat dd { margin: 0; font-family: var(--display); font-size: 1.5rem; font-weight: 500; color: var(--navy); }
+    .stat--gold dd { color: var(--gold-deep); }
+
+    .toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 18px; }
+    .toolbar > div { flex: 0 1 200px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px; padding: 11px 18px; border: 0; border-radius: 3px;
+      cursor: pointer; font: inherit; font-size: .74rem; letter-spacing: .12em; text-transform: uppercase; text-decoration: none;
+    }
+    .btn--gold { background: var(--gold); color: var(--navy); font-weight: 600; }
+    .btn--line { background: #fff; color: var(--navy); border: 1px solid var(--navy); }
+    .btn:hover { opacity: .88; }
+
+    .panel { background: #fff; border: 1px solid var(--line); border-radius: 4px; box-shadow: var(--shadow); overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+    th { text-align: left; font-size: .64rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); padding: 14px 16px; border-bottom: 1px solid var(--line); font-weight: 500; white-space: nowrap; }
+    td { padding: 13px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    tr:last-child td { border-bottom: 0; }
+    tbody tr:hover { background: var(--cream); }
+    .num { text-align: right; white-space: nowrap; }
+    .numero { font-variant-numeric: tabular-nums; color: var(--navy); font-weight: 600; }
+    .tag { display: inline-block; font-size: .62rem; letter-spacing: .1em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; }
+    .tag--note { background: rgba(200,162,74,.18); color: var(--gold-deep); }
+    .tag--devis { background: rgba(11,30,61,.08); color: var(--navy); }
+    .trip { color: var(--muted); font-size: .84rem; }
+    .empty { padding: 50px 20px; text-align: center; color: var(--muted); }
+    .hidden { display: none !important; }
+
+    @media (max-width: 760px) {
+      .shell { padding: 18px 14px 50px; }
+      th:nth-child(4), td:nth-child(4), th:nth-child(6), td:nth-child(6) { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar__in">
+    <a class="mark" href="/" aria-label="EJ-VTC, retour à l'accueil"><b>EJ</b><i></i><span>VTC</span></a>
+    <nav>
+      <a href="/note">Nouvelle note</a>
+      <a href="/journal" aria-current="page">Journal</a>
+    </nav>
+  </div>
+</header>
+
+<div class="shell">
+  <p class="eyebrow">Comptabilité</p>
+  <h1>Journal des courses, <em>mois par mois.</em></h1>
+
+  <!-- ============ ACCÈS ============ -->
+  <section class="gate" id="gate">
+    <p>Ce journal contient des données clients. Entrez la clé d'accès : elle est conservée sur cet appareil uniquement.</p>
+    <label for="token">Clé d'accès</label>
+    <input id="token" type="password" autocomplete="current-password" placeholder="••••••••••••">
+    <p class="error hidden" id="gateError">Clé refusée.</p>
+    <p style="margin-top:16px"><button class="btn btn--gold" type="button" id="unlock">Ouvrir le journal</button></p>
+  </section>
+
+  <!-- ============ JOURNAL ============ -->
+  <div id="app" class="hidden">
+    <dl class="totals">
+      <div class="stat"><dt>Courses</dt><dd id="sCourses">—</dd></div>
+      <div class="stat"><dt>Total HT</dt><dd id="sHT">—</dd></div>
+      <div class="stat"><dt>TVA collectée</dt><dd id="sTVA">—</dd></div>
+      <div class="stat stat--gold"><dt>Total TTC</dt><dd id="sTTC">—</dd></div>
+    </dl>
+
+    <div class="toolbar">
+      <div>
+        <label for="month">Mois</label>
+        <select id="month"></select>
+      </div>
+      <div>
+        <label for="search">Rechercher</label>
+        <input id="search" type="search" placeholder="Client, trajet, numéro…">
+      </div>
+      <a class="btn btn--line" id="csv" href="#">Export CSV</a>
+      <a class="btn btn--gold" href="/note">Nouvelle note</a>
+    </div>
+
+    <div class="panel">
+      <table>
+        <thead>
+          <tr>
+            <th>N°</th><th>Date</th><th>Client</th><th>Trajet</th>
+            <th class="num">TVA</th><th class="num">HT</th><th class="num">TTC</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="empty hidden" id="empty">Aucun document pour cette période.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const euro = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });
+  const KEY = 'ejvtc.journalToken';
+
+  const escapeHtml = (v) => String(v ?? '').replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const frDate = (v) => (v ? v.split('-').reverse().join('/') : '');
+
+  const token = () => { try { return sessionStorage.getItem(KEY) || ''; } catch { return ''; } };
+
+  async function api(path) {
+    const res = await fetch(path, { headers: { Authorization: `Bearer ${token()}` } });
+    if (res.status === 401) throw new Error('unauthorized');
+    if (!res.ok) throw new Error('server');
+    return res.json();
+  }
+
+  function buildMonths() {
+    const now = new Date();
+    const options = ['<option value="">Tous les mois</option>'];
+    for (let i = 0; i < 18; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const label = d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+      options.push(`<option value="${value}"${i === 0 ? ' selected' : ''}>${label}</option>`);
+    }
+    $('month').innerHTML = options.join('');
+  }
+
+  async function load() {
+    const params = new URLSearchParams();
+    if ($('month').value) params.set('month', $('month').value);
+    if ($('search').value.trim()) params.set('q', $('search').value.trim());
+
+    const data = await api(`/api/journal?${params}`);
+    const { documents, totals } = data;
+
+    $('sCourses').textContent = totals.courses;
+    $('sHT').textContent = euro.format(totals.totalHt);
+    $('sTVA').textContent = euro.format(totals.montantTva);
+    $('sTTC').textContent = euro.format(totals.totalTtc);
+
+    $('rows').innerHTML = documents.map((d) => `
+      <tr>
+        <td><span class="numero">${escapeHtml(d.numero)}</span><br>
+            <span class="tag tag--${d.type === 'NOTE' ? 'note' : 'devis'}">${d.type}</span></td>
+        <td>${frDate(d.date_doc)}</td>
+        <td>${escapeHtml(d.client) || '—'}${d.client_info ? `<br><span class="trip">${escapeHtml(d.client_info)}</span>` : ''}</td>
+        <td><span class="trip">${escapeHtml(d.depart) || '—'}${d.arrivee ? ' → ' + escapeHtml(d.arrivee) : ''}${d.aller_retour ? ' (A/R)' : ''}</span></td>
+        <td class="num">${d.taux_tva} %</td>
+        <td class="num">${euro.format(d.total_ht)}</td>
+        <td class="num"><strong>${euro.format(d.total_ttc)}</strong></td>
+      </tr>`).join('');
+
+    $('empty').classList.toggle('hidden', documents.length > 0);
+    $('csv').href = `/api/journal/export?${params}`;
+  }
+
+  async function unlock() {
+    const value = $('token').value.trim();
+    if (!value) return;
+    try { sessionStorage.setItem(KEY, value); } catch { /* ignore */ }
+    try {
+      await api('/api/journal?limit=1');
+      $('gate').classList.add('hidden');
+      $('app').classList.remove('hidden');
+      buildMonths();
+      await load();
+    } catch (err) {
+      $('gateError').textContent = err.message === 'unauthorized' ? 'Clé refusée.' : 'Journal indisponible.';
+      $('gateError').classList.remove('hidden');
+      try { sessionStorage.removeItem(KEY); } catch { /* ignore */ }
+    }
+  }
+
+  // Le CSV passe par un lien : il faut l'en-tête, donc on télécharge en fetch.
+  $('csv').addEventListener('click', async (e) => {
+    e.preventDefault();
+    const res = await fetch($('csv').href, { headers: { Authorization: `Bearer ${token()}` } });
+    if (!res.ok) return;
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `journal-ej-vtc${$('month').value ? '-' + $('month').value : ''}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  $('unlock').addEventListener('click', unlock);
+  $('token').addEventListener('keydown', (e) => { if (e.key === 'Enter') unlock(); });
+  $('month').addEventListener('change', load);
+  let timer;
+  $('search').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(load, 250); });
+
+  if (token()) unlock();
+})();
+</script>
+</body>
+</html>
