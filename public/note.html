@@ -7,259 +7,406 @@
   <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#0B1E3D">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..600&family=Inter:wght@400;500;600&display=swap">
+
   <style>
     :root {
-      --navy: #0B1E3D; --gold: #C8A24A; --paper: #F7F5F1;
-      --ink: #1A2233; --muted: #5A6376; --line: rgba(11, 30, 61, .14);
+      --navy: #0B1E3D; --navy-soft: #16294a; --gold: #C8A24A; --gold-deep: #8a6f28;
+      --paper: #F7F4EC; --cream: #FBF9F4; --ink: #1A2233; --muted: #5A6376;
+      --line: rgba(11, 30, 61, .13);
+      --display: 'Fraunces', Georgia, serif;
+      --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      --shadow: 0 1px 2px rgba(11,30,61,.04), 0 12px 32px -12px rgba(11,30,61,.18);
     }
-    * , *::before, *::after { box-sizing: border-box; }
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
     body {
-      margin: 0; background: var(--paper); color: var(--ink); line-height: 1.6;
-      font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+      margin: 0; background: var(--paper); color: var(--ink);
+      font-family: var(--sans); line-height: 1.6; font-size: 15px;
     }
-    .wrap { max-width: 900px; margin: 0 auto; padding: 24px 16px 64px; }
 
-    header.top { background: var(--navy); color: var(--paper); padding: 20px 16px; }
-    header.top .wrap { padding: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-    .mark { display: inline-flex; align-items: center; gap: 9px; text-decoration: none;
-            letter-spacing: .22em; text-transform: uppercase; color: var(--gold); font-size: .95rem; }
-    .mark b { font-weight: 600; }
-    .mark i { display: block; width: 24px; height: 1px; background: currentColor; }
-    .top small { color: #AEB8CC; letter-spacing: .1em; text-transform: uppercase; font-size: .68rem; }
-
-    h1 { font-size: 1.5rem; font-weight: 500; margin: 28px 0 4px; }
-    .lead { color: var(--muted); margin: 0 0 24px; }
-
-    .warn {
-      background: #FFF4D6; border-left: 3px solid var(--gold); padding: 12px 14px;
-      font-size: .9rem; margin: 0 0 24px; border-radius: 2px;
+    /* ---------- Barre de marque ---------- */
+    .topbar { background: var(--navy); color: var(--paper); }
+    .topbar__in {
+      max-width: 1240px; margin: 0 auto; padding: 16px 20px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
     }
-    .warn b { color: #8a6f28; }
-
-    fieldset { border: 1px solid var(--line); border-radius: 3px; padding: 18px; margin: 0 0 18px; }
-    legend { padding: 0 8px; font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--gold); }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
-    label { display: block; font-size: .78rem; color: var(--muted); margin-bottom: 5px; }
-    input, select, textarea {
-      width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: 2px;
-      font: inherit; font-size: .95rem; background: #fff; color: var(--ink);
+    .mark { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--gold); }
+    .mark b { font-weight: 600; letter-spacing: .18em; }
+    .mark i { display: block; width: 26px; height: 1px; background: currentColor; }
+    .mark span { letter-spacing: .3em; font-size: .82rem; color: var(--paper); }
+    .topbar small {
+      color: #93A1BC; letter-spacing: .18em; text-transform: uppercase; font-size: .64rem;
+      border: 1px solid rgba(255,255,255,.16); padding: 4px 10px; border-radius: 999px;
     }
-    input:focus, select:focus, textarea:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
-    .hint { font-size: .74rem; color: var(--muted); margin-top: 5px; }
 
-    .actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 22px 0 36px; }
+    /* ---------- Mise en page ---------- */
+    .shell { max-width: 1240px; margin: 0 auto; padding: 28px 20px 140px; }
+    .intro { margin-bottom: 24px; }
+    .eyebrow {
+      display: flex; align-items: center; gap: 10px; margin: 0 0 8px;
+      font-size: .68rem; letter-spacing: .2em; text-transform: uppercase; color: var(--gold-deep);
+    }
+    .eyebrow::before { content: ""; width: 26px; height: 1px; background: var(--gold); }
+    h1 { font-family: var(--display); font-weight: 400; font-size: clamp(1.6rem, 4vw, 2.1rem); margin: 0 0 6px; color: var(--navy); }
+    h1 em { font-style: italic; color: var(--gold-deep); }
+    .intro p { margin: 0; color: var(--muted); max-width: 62ch; }
+
+    .notice {
+      display: flex; gap: 12px; align-items: flex-start;
+      background: #FFF6DF; border: 1px solid rgba(200,162,74,.4); border-left: 3px solid var(--gold);
+      padding: 13px 16px; border-radius: 3px; margin: 20px 0 26px; font-size: .88rem;
+    }
+    .notice svg { flex: 0 0 auto; width: 18px; height: 18px; margin-top: 2px; fill: var(--gold-deep); }
+
+    .layout { display: grid; gap: 26px; }
+    @media (min-width: 1040px) { .layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } }
+
+    /* ---------- Formulaire ---------- */
+    .card {
+      background: #fff; border: 1px solid var(--line); border-radius: 4px;
+      padding: 20px; margin-bottom: 18px; box-shadow: var(--shadow);
+    }
+    .card > h2 {
+      font-size: .68rem; letter-spacing: .2em; text-transform: uppercase; color: var(--gold-deep);
+      margin: 0 0 16px; font-weight: 600;
+    }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+    .field--wide { grid-column: 1 / -1; }
+    label { display: block; font-size: .74rem; color: var(--muted); margin-bottom: 6px; letter-spacing: .02em; }
+    input, select {
+      width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 3px;
+      font: inherit; font-size: .95rem; background: var(--cream); color: var(--ink);
+      transition: border-color .15s, background .15s;
+    }
+    input:hover, select:hover { border-color: rgba(11,30,61,.26); }
+    input:focus, select:focus { outline: none; border-color: var(--gold); background: #fff; box-shadow: 0 0 0 3px rgba(200,162,74,.18); }
+    input::placeholder { color: #A3AAB8; }
+    .hint { font-size: .72rem; color: var(--muted); margin: 6px 0 0; }
+
+    /* ---------- Raccourcis tarifaires ---------- */
+    .presets { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+    .chip {
+      border: 1px solid var(--line); background: var(--cream); color: var(--navy);
+      padding: 8px 13px; border-radius: 999px; cursor: pointer; font: inherit; font-size: .82rem;
+      transition: all .15s; white-space: nowrap;
+    }
+    .chip:hover { border-color: var(--gold); background: #fff; }
+    .chip[aria-pressed="true"] { background: var(--navy); border-color: var(--navy); color: var(--paper); }
+    .chip b { font-weight: 600; }
+    .chip span { opacity: .65; font-size: .76rem; }
+
+    .switch { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; font-size: .9rem; }
+    .switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .switch__track {
+      width: 42px; height: 24px; border-radius: 999px; background: #D7D3C9; position: relative; transition: background .2s;
+    }
+    .switch__track::after {
+      content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px;
+      border-radius: 50%; background: #fff; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    }
+    .switch input:checked + .switch__track { background: var(--gold); }
+    .switch input:checked + .switch__track::after { transform: translateX(18px); }
+    .switch input:focus-visible + .switch__track { box-shadow: 0 0 0 3px rgba(200,162,74,.35); }
+
+    /* ---------- Aperçu ---------- */
+    .preview { position: sticky; top: 24px; }
+    .preview__bar {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      margin-bottom: 10px; font-size: .68rem; letter-spacing: .2em; text-transform: uppercase; color: var(--muted);
+    }
+    .doc {
+      background: #fff; border: 1px solid var(--line); border-radius: 4px;
+      padding: 32px; box-shadow: var(--shadow);
+    }
+    .doc__head { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+    .doc__brand { font-size: 1.1rem; letter-spacing: .24em; text-transform: uppercase; color: var(--navy); font-weight: 600; }
+    .doc__issuer { font-size: .78rem; color: var(--muted); margin-top: 10px; white-space: pre-line; line-height: 1.75; }
+    .doc__meta { text-align: right; font-size: .82rem; color: var(--muted); }
+    .doc__meta strong {
+      display: block; font-family: var(--display); font-size: 1.2rem; font-weight: 500;
+      letter-spacing: .1em; color: var(--navy); margin-bottom: 2px;
+    }
+    .doc__title {
+      font-family: var(--display); font-weight: 400; font-size: 1.12rem; color: var(--navy);
+      margin: 26px 0 18px; padding-bottom: 10px; border-bottom: 2px solid var(--navy);
+    }
+    .doc__client { font-size: .9rem; margin: 0 0 18px; }
+    .doc__client span { color: var(--muted); }
+    table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+    th {
+      text-align: left; font-size: .64rem; letter-spacing: .14em; text-transform: uppercase;
+      color: var(--muted); border-bottom: 1px solid var(--line); padding: 0 0 9px; font-weight: 500;
+    }
+    td { padding: 13px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+    td.num, th.num { text-align: right; white-space: nowrap; padding-left: 12px; }
+    .line__title { font-weight: 600; color: var(--navy); }
+    .line__sub { color: var(--muted); font-size: .84rem; }
+    .totals { margin: 18px 0 0 auto; width: min(300px, 100%); font-size: .9rem; }
+    .totals div { display: flex; justify-content: space-between; gap: 16px; padding: 6px 0; }
+    .totals .ttc {
+      border-top: 2px solid var(--navy); margin-top: 8px; padding-top: 11px;
+      font-family: var(--display); font-size: 1.3rem; font-weight: 500; color: var(--navy);
+    }
+    .doc__foot {
+      margin-top: 26px; padding-top: 15px; border-top: 1px solid var(--line);
+      font-size: .74rem; color: var(--muted); white-space: pre-line; line-height: 1.8;
+    }
+    .todo { background: #FFF0C9; padding: 1px 6px; border-radius: 2px; color: #7a5f18; }
+
+    /* ---------- Actions ---------- */
+    .actions {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+      background: rgba(247,244,236,.94); backdrop-filter: blur(10px);
+      border-top: 1px solid var(--line); padding: 12px 20px;
+      display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+    }
     .btn {
-      display: inline-block; padding: 12px 22px; border: 0; border-radius: 2px; cursor: pointer;
-      font: inherit; font-size: .8rem; letter-spacing: .12em; text-transform: uppercase; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border: 0; border-radius: 3px;
+      cursor: pointer; font: inherit; font-size: .76rem; letter-spacing: .14em; text-transform: uppercase;
+      text-decoration: none; transition: opacity .15s, transform .05s;
     }
+    .btn:active { transform: translateY(1px); }
+    .btn:hover { opacity: .88; }
     .btn--gold { background: var(--gold); color: var(--navy); font-weight: 600; }
     .btn--line { background: #fff; color: var(--navy); border: 1px solid var(--navy); }
-    .btn:hover { opacity: .85; }
+    .btn--ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+    .btn svg { width: 15px; height: 15px; fill: currentColor; }
 
-    /* ---------- Le document ---------- */
-    .doc {
-      background: #fff; border: 1px solid var(--line); padding: 34px; border-radius: 3px;
+    @media (max-width: 1039px) {
+      .preview { position: static; }
+      .doc { padding: 22px; }
     }
-    .doc__head { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
-    .doc__brand { font-size: 1.25rem; letter-spacing: .2em; text-transform: uppercase; color: var(--navy); font-weight: 600; }
-    .doc__issuer { font-size: .82rem; color: var(--muted); margin-top: 8px; white-space: pre-line; }
-    .doc__meta { text-align: right; font-size: .85rem; }
-    .doc__meta strong { display: block; font-size: 1.05rem; color: var(--navy); }
-    .doc__title {
-      margin: 26px 0 18px; padding-bottom: 8px; border-bottom: 2px solid var(--navy);
-      font-size: 1.1rem; letter-spacing: .14em; text-transform: uppercase; color: var(--navy);
-    }
-    .doc__client { font-size: .9rem; margin-bottom: 20px; }
-    .doc__client span { color: var(--muted); }
-    table { width: 100%; border-collapse: collapse; font-size: .9rem; }
-    th { text-align: left; font-size: .7rem; letter-spacing: .12em; text-transform: uppercase;
-         color: var(--muted); border-bottom: 1px solid var(--line); padding: 0 0 8px; font-weight: 500; }
-    td { padding: 12px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
-    td.num, th.num { text-align: right; white-space: nowrap; }
-    .totals { margin-top: 18px; margin-left: auto; width: min(320px, 100%); font-size: .92rem; }
-    .totals div { display: flex; justify-content: space-between; padding: 6px 0; }
-    .totals .ttc { border-top: 2px solid var(--navy); margin-top: 6px; padding-top: 10px;
-                   font-size: 1.15rem; font-weight: 600; color: var(--navy); }
-    .doc__foot { margin-top: 26px; padding-top: 16px; border-top: 1px solid var(--line);
-                 font-size: .76rem; color: var(--muted); white-space: pre-line; }
-    .todo { background: #FFF4D6; padding: 1px 5px; border-radius: 2px; }
 
+    /* ---------- Impression ---------- */
     @media print {
-      header.top, .no-print { display: none !important; }
-      body { background: #fff; }
-      .wrap { max-width: none; padding: 0; }
-      .doc { border: 0; padding: 0; }
-      @page { margin: 18mm; }
+      .topbar, .intro, .notice, .pane--form, .actions, .preview__bar { display: none !important; }
+      body { background: #fff; font-size: 11pt; }
+      .shell { max-width: none; padding: 0; }
+      .layout { display: block; }
+      .preview { position: static; }
+      .doc { border: 0; box-shadow: none; padding: 0; }
+      .todo { background: none; color: #000; border-bottom: 1px dotted #000; }
+      @page { margin: 16mm; }
     }
+    /* ---------- Téléphone : aller au formulaire le plus vite possible ---------- */
+    @media (max-width: 600px) {
+      .shell { padding: 18px 14px 110px; }
+      .intro { margin-bottom: 16px; }
+      h1 { font-size: 1.35rem; line-height: 1.25; }
+      .intro p { font-size: .88rem; }
+      .notice { font-size: .82rem; padding: 11px 13px; margin: 14px 0 18px; }
+      .card { padding: 16px 14px; }
+      .chip { padding: 9px 12px; }
+      .actions { padding: 10px 12px; gap: 8px; flex-wrap: nowrap; }
+      .btn { padding: 12px 10px; font-size: .68rem; letter-spacing: .08em; flex: 1 1 auto; justify-content: center; }
+      .btn--ghost { flex: 0 0 auto; }
+    }
+
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
   </style>
 </head>
 <body>
 
-<header class="top no-print">
-  <div class="wrap">
+<header class="topbar">
+  <div class="topbar__in">
     <a class="mark" href="/" aria-label="EJ-VTC, retour à l'accueil"><b>EJ</b><i></i><span>VTC</span></a>
-    <small>Usage interne</small>
+    <small>Outil interne</small>
   </div>
 </header>
 
-<div class="wrap">
-  <div class="no-print">
-    <h1>Note / devis client</h1>
-    <p class="lead">Remplissez, puis <strong>Imprimer → Enregistrer en PDF</strong> et envoyez par WhatsApp ou e-mail.</p>
+<div class="shell">
+  <div class="intro">
+    <p class="eyebrow">Facturation</p>
+    <h1>Note et devis, <em>en deux minutes.</em></h1>
+    <p>Choisissez la prestation, complétez la course, puis <strong>Imprimer</strong> → <em>Enregistrer en PDF</em>. Le document se met à jour pendant que vous tapez.</p>
+  </div>
 
-    <p class="warn">
-      <b>Obligation :</b> une note doit être remise au client <b>avant le paiement</b> dès 25 € TTC,
-      et en dessous de 25 € <b>si le client la demande</b> (arrêté du 3 octobre 1983).
-    </p>
-
-    <form id="form" autocomplete="off">
-      <fieldset>
-        <legend>Document</legend>
-        <div class="grid">
-          <div>
-            <label for="type">Type</label>
-            <select id="type">
-              <option value="NOTE">Note (après la course)</option>
-              <option value="DEVIS">Devis (avant la course)</option>
-            </select>
-          </div>
-          <div>
-            <label for="numero">Numéro</label>
-            <input id="numero" type="text" placeholder="2026-0001">
-            <p class="hint">S'incrémente tout seul à chaque document.</p>
-          </div>
-          <div>
-            <label for="dateDoc">Date du document</label>
-            <input id="dateDoc" type="date">
-          </div>
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend>Client</legend>
-        <div class="grid">
-          <div>
-            <label for="client">Nom du client</label>
-            <input id="client" type="text" placeholder="M. Dupont">
-          </div>
-          <div>
-            <label for="clientInfo">Société / adresse (facultatif)</label>
-            <input id="clientInfo" type="text" placeholder="Pour une note professionnelle">
-          </div>
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend>Course</legend>
-        <div class="grid">
-          <div>
-            <label for="dateCourse">Date de la course</label>
-            <input id="dateCourse" type="date">
-          </div>
-          <div>
-            <label for="heure">Heure de prise en charge</label>
-            <input id="heure" type="time">
-          </div>
-          <div>
-            <label for="depart">Lieu de départ</label>
-            <input id="depart" type="text" placeholder="Gare du Havre">
-          </div>
-          <div>
-            <label for="arrivee">Destination</label>
-            <input id="arrivee" type="text" placeholder="Aéroport de Deauville">
-          </div>
-          <div>
-            <label for="passagers">Passagers</label>
-            <input id="passagers" type="number" min="1" max="8" value="1">
-          </div>
-          <div>
-            <label for="paiement">Paiement</label>
-            <select id="paiement">
-              <option>Carte bancaire</option>
-              <option>Espèces</option>
-              <option>À régler</option>
-            </select>
-          </div>
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend>Prestation et prix</legend>
-        <div class="grid">
-          <div>
-            <label for="prestation">Prestation</label>
-            <select id="prestation">
-              <option value="transfert|10">Transfert local — TVA 10 %</option>
-              <option value="forfait|10">Forfait aéroport / gare — TVA 10 %</option>
-              <option value="circuit|10">Circuit touristique — TVA 10 %</option>
-              <option value="miseadispo|20">Mise à disposition — TVA 20 %</option>
-            </select>
-          </div>
-          <div>
-            <label for="detail">Détail affiché</label>
-            <input id="detail" type="text" placeholder="29,2 km × 1,80 € HT">
-          </div>
-          <div>
-            <label for="prixHT">Prix HT (€)</label>
-            <input id="prixHT" type="number" min="0" step="0.01" placeholder="45.00">
-          </div>
-          <div>
-            <label for="supplementHT">Supplément HT (€, facultatif)</label>
-            <input id="supplementHT" type="number" min="0" step="0.01" placeholder="0.00">
-            <p class="hint">Prise en charge, attente, bagages…</p>
-          </div>
-          <div>
-            <label for="supplementLabel">Libellé du supplément</label>
-            <input id="supplementLabel" type="text" placeholder="Frais de prise en charge">
-          </div>
-        </div>
-      </fieldset>
-    </form>
-
-    <div class="actions">
-      <button class="btn btn--gold" type="button" id="print">Imprimer / PDF</button>
-      <a class="btn btn--line" id="wa" href="#" target="_blank" rel="noopener">Envoyer par WhatsApp</a>
-      <button class="btn btn--line" type="button" id="reset">Nouveau document</button>
+  <div class="notice">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 1 21h22L12 2Zm0 5 7.5 13h-15L12 7Zm-1 4v4h2v-4h-2Zm0 5v2h2v-2h-2Z"/></svg>
+    <div>
+      <strong>Obligation :</strong> la note doit être remise au client <strong>avant le paiement</strong> dès
+      25 € TTC, et en dessous de 25 € <strong>si le client la demande</strong> (arrêté du 3 octobre 1983).
     </div>
   </div>
 
-  <!-- ============ LE DOCUMENT ============ -->
-  <article class="doc" id="doc">
-    <div class="doc__head">
-      <div>
-        <div class="doc__brand">EJ&#8201;—&#8201;VTC</div>
-        <div class="doc__issuer" id="issuer"></div>
-      </div>
-      <div class="doc__meta">
-        <strong id="docType">NOTE</strong>
-        <span id="docNum"></span><br>
-        <span id="docDate"></span>
-      </div>
+  <div class="layout">
+    <!-- ============ FORMULAIRE ============ -->
+    <div class="pane pane--form">
+      <form id="form" autocomplete="off">
+
+        <section class="card">
+          <h2>Prestation</h2>
+          <div class="presets" id="presets" role="group" aria-label="Tarifs courants"></div>
+
+          <div class="grid" style="margin-top:16px">
+            <div>
+              <label for="prestation">Type et TVA</label>
+              <select id="prestation">
+                <option value="transfert|10">Transfert local — TVA 10 %</option>
+                <option value="forfait|10">Forfait aéroport / gare — TVA 10 %</option>
+                <option value="circuit|10">Circuit touristique — TVA 10 %</option>
+                <option value="miseadispo|20">Mise à disposition — TVA 20 %</option>
+              </select>
+            </div>
+            <div id="kmField" hidden>
+              <label for="km">Distance (km)</label>
+              <input id="km" type="number" min="0" step="0.1" placeholder="29.2">
+              <p class="hint">1,80 € HT/km · minimum 9,50 € HT</p>
+            </div>
+            <div>
+              <label for="prixHT">Prix HT (€)</label>
+              <input id="prixHT" type="number" min="0" step="0.01" placeholder="45.00">
+            </div>
+            <div class="field--wide">
+              <label for="detail">Détail affiché sur le document</label>
+              <input id="detail" type="text" placeholder="Forfait Le Havre → Aéroport Deauville">
+            </div>
+            <div class="field--wide">
+              <label class="switch" for="allerRetour">
+                <input type="checkbox" id="allerRetour">
+                <span class="switch__track" aria-hidden="true"></span>
+                <span>Aller-retour <span style="color:var(--muted)">— double le montant</span></span>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Course</h2>
+          <div class="grid">
+            <div class="field--wide">
+              <label for="depart">Lieu de prise en charge</label>
+              <input id="depart" type="text" placeholder="Gare du Havre">
+            </div>
+            <div class="field--wide">
+              <label for="arrivee">Destination</label>
+              <input id="arrivee" type="text" placeholder="Aéroport de Deauville">
+            </div>
+            <div>
+              <label for="dateCourse">Date</label>
+              <input id="dateCourse" type="date">
+            </div>
+            <div>
+              <label for="heure">Heure</label>
+              <input id="heure" type="time">
+            </div>
+            <div>
+              <label for="passagers">Passagers</label>
+              <input id="passagers" type="number" min="1" max="8" value="1">
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Client et paiement</h2>
+          <div class="grid">
+            <div>
+              <label for="client">Nom du client</label>
+              <input id="client" type="text" placeholder="M. Dupont">
+            </div>
+            <div>
+              <label for="clientInfo">Société / adresse <span style="opacity:.6">(facultatif)</span></label>
+              <input id="clientInfo" type="text" placeholder="Pour une note professionnelle">
+            </div>
+            <div>
+              <label for="paiement">Règlement</label>
+              <select id="paiement">
+                <option>Carte bancaire</option>
+                <option>Espèces</option>
+                <option>À régler</option>
+              </select>
+            </div>
+            <div>
+              <label for="supplementHT">Supplément HT (€)</label>
+              <input id="supplementHT" type="number" min="0" step="0.01" placeholder="0.00">
+            </div>
+            <div class="field--wide">
+              <label for="supplementLabel">Libellé du supplément</label>
+              <input id="supplementLabel" type="text" placeholder="Frais de prise en charge, attente, bagages…">
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Document</h2>
+          <div class="grid">
+            <div>
+              <label for="type">Type</label>
+              <select id="type">
+                <option value="NOTE">Note — après la course</option>
+                <option value="DEVIS">Devis — avant la course</option>
+              </select>
+            </div>
+            <div>
+              <label for="numero">Numéro</label>
+              <input id="numero" type="text" placeholder="2026-0001">
+              <p class="hint">Suite continue, incrémentée à chaque impression.</p>
+            </div>
+            <div>
+              <label for="dateDoc">Date du document</label>
+              <input id="dateDoc" type="date">
+            </div>
+          </div>
+        </section>
+      </form>
     </div>
 
-    <h2 class="doc__title" id="docTitle">Note de transport</h2>
+    <!-- ============ APERÇU ============ -->
+    <div class="pane preview">
+      <div class="preview__bar no-print">
+        <span>Aperçu du document</span>
+        <span id="liveTotal"></span>
+      </div>
 
-    <p class="doc__client" id="docClient"></p>
+      <article class="doc" id="doc">
+        <div class="doc__head">
+          <div>
+            <div class="doc__brand">EJ&#8201;—&#8201;VTC</div>
+            <div class="doc__issuer" id="issuer"></div>
+          </div>
+          <div class="doc__meta">
+            <strong id="docType">NOTE</strong>
+            <span id="docNum"></span><br>
+            <span id="docDate"></span>
+          </div>
+        </div>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Prestation</th>
-          <th class="num">TVA</th>
-          <th class="num">Montant HT</th>
-        </tr>
-      </thead>
-      <tbody id="lines"></tbody>
-    </table>
+        <h2 class="doc__title" id="docTitle">Note — transport de personnes avec chauffeur</h2>
+        <p class="doc__client" id="docClient"></p>
 
-    <div class="totals">
-      <div><span>Total HT</span><span id="tHT"></span></div>
-      <div><span id="tTvaLabel">TVA</span><span id="tTVA"></span></div>
-      <div class="ttc"><span>Total TTC</span><span id="tTTC"></span></div>
+        <table>
+          <thead>
+            <tr><th>Prestation</th><th class="num">TVA</th><th class="num">Montant HT</th></tr>
+          </thead>
+          <tbody id="lines"></tbody>
+        </table>
+
+        <div class="totals">
+          <div><span>Total HT</span><span id="tHT"></span></div>
+          <div><span id="tTvaLabel">TVA</span><span id="tTVA"></span></div>
+          <div class="ttc"><span>Total TTC</span><span id="tTTC"></span></div>
+        </div>
+
+        <div class="doc__foot" id="foot"></div>
+      </article>
     </div>
+  </div>
+</div>
 
-    <div class="doc__foot" id="foot"></div>
-  </article>
+<div class="actions no-print">
+  <button class="btn btn--gold" type="button" id="print">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 8h-1V3H6v5H5a3 3 0 0 0-3 3v6h4v3h12v-3h4v-6a3 3 0 0 0-3-3ZM8 5h8v3H8V5Zm8 14H8v-4h8v4Zm3-7a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg>
+    Imprimer / PDF
+  </button>
+  <a class="btn btn--line" id="wa" href="#" target="_blank" rel="noopener">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 5-1.3A10 10 0 1 0 12 2Zm5.3 14.2c-.2.6-1.3 1.2-1.8 1.2-.5 0-.9.2-3-.7a11.6 11.6 0 0 1-4.5-4c-.3-.5-1.1-1.5-1.1-2.8s.7-2 .9-2.2a1 1 0 0 1 .7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .6l-.4.5c-.1.2-.3.3-.1.6a9 9 0 0 0 1.5 1.8c.6.6 1.2.8 1.4.9.2.1.4.1.5-.1l.7-.8c.2-.2.3-.2.6-.1l2 1c.3.1.4.2.5.3 0 .2 0 .9-.2 1.5Z"/></svg>
+    WhatsApp
+  </a>
+  <button class="btn btn--ghost" type="button" id="reset">Nouveau</button>
 </div>
 
 <script>
@@ -269,24 +416,39 @@
   /* ------------------------------------------------------------------
      IDENTITÉ DE L'ENTREPRISE — à remplir une seule fois.
      Une note doit identifier l'entreprise : sans ces informations,
-     le document n'est pas conforme.
+     le document n'est pas conforme et le signale.
      ------------------------------------------------------------------ */
   const ENTREPRISE = {
     raisonSociale: '',        // ex. "EJ-VTC" ou la raison sociale exacte
     formeJuridique: '',       // ex. "Auto-entrepreneur"
     adresse: '',              // ex. "12 rue Example, 76600 Le Havre"
-    siret: '',                // 14 chiffres
+    siret: '',                // 14 chiffres (INSEE)
     tva: '',                  // FR + 11 caractères, ou '' si franchise en base
-    evtc: '',                 // numéro d'inscription au registre VTC
+    evtc: '',                 // numéro au registre VTC (macaron rouge du véhicule)
     telephone: '+33 6 52 80 74 88',
     email: 'contact@ej-vtc.fr',
     site: 'ej-vtc.fr',
   };
 
+  /* Tarifs officiels — identiques à api/_lib/pricing.js */
+  const RATE_PER_KM = 1.8, MIN_FARE = 9.5;
+  const PRESETS = [
+    { id: 'orly',       label: 'Orly',        price: 376, kind: 'forfait|10',   detail: 'Forfait, kilométrage inclus' },
+    { id: 'cdg',        label: 'Roissy CDG',  price: 410, kind: 'forfait|10',   detail: 'Forfait, kilométrage inclus' },
+    { id: 'caen',       label: 'Caen',        price: 120, kind: 'forfait|10',   detail: 'Forfait, kilométrage inclus' },
+    { id: 'deauville',  label: 'Deauville',   price: 45,  kind: 'forfait|10',   detail: 'Forfait, kilométrage inclus' },
+    { id: 'local',      label: 'Local',       price: null, kind: 'transfert|10', detail: '' },
+    { id: '1h',         label: '1 h',         price: 60,  kind: 'miseadispo|20', detail: 'Mise à disposition 1 heure, 20 km inclus' },
+    { id: '4h',         label: '4 h',         price: 300, kind: 'miseadispo|20', detail: 'Mise à disposition 4 heures, 70 km inclus' },
+    { id: '8h',         label: '8 h',         price: 580, kind: 'miseadispo|20', detail: 'Mise à disposition 8 heures, 200 km inclus' },
+    { id: 'msm',        label: 'Mont St-Michel', price: 620, kind: 'circuit|10', detail: 'Circuit Mont Saint-Michel, environ 8 h, kilométrage inclus' },
+  ];
+
   const WA_NUMBER = '33652807488';
   const euro = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });
   const $ = (id) => document.getElementById(id);
   const todo = (label) => `<span class="todo">[${label} à renseigner]</span>`;
+  const round2 = (n) => Math.round(n * 100) / 100;
 
   /* ---------- Numérotation : suite continue, mémorisée localement ---------- */
   function nextNumero() {
@@ -298,13 +460,10 @@
     } catch { /* stockage indisponible : on repart à 1 */ }
     return `${year}-${String(seq).padStart(4, '0')}`;
   }
-
   function commitNumero(numero) {
     const m = /^(\d{4})-(\d+)$/.exec(numero);
     if (!m) return;
-    try {
-      localStorage.setItem('ejvtc.numero', JSON.stringify({ year: +m[1], seq: +m[2] }));
-    } catch { /* rien à faire */ }
+    try { localStorage.setItem('ejvtc.numero', JSON.stringify({ year: +m[1], seq: +m[2] })); } catch { /* ignore */ }
   }
 
   const frDate = (value) => {
@@ -312,10 +471,37 @@
     const [y, m, d] = value.split('-');
     return `${d}/${m}/${y}`;
   };
+  const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  /* ---------- Raccourcis ---------- */
+  function buildPresets() {
+    $('presets').innerHTML = PRESETS.map((p) => `
+      <button class="chip" type="button" data-preset="${p.id}" aria-pressed="false">
+        <b>${escapeHtml(p.label)}</b>${p.price ? ` <span>${p.price} € HT</span>` : ' <span>au km</span>'}
+      </button>`).join('');
+
+    $('presets').addEventListener('click', (e) => {
+      const button = e.target.closest('[data-preset]');
+      if (!button) return;
+      const preset = PRESETS.find((p) => p.id === button.dataset.preset);
+      for (const chip of $('presets').children) chip.setAttribute('aria-pressed', String(chip === button));
+
+      $('prestation').value = preset.kind;
+      $('detail').value = preset.detail;
+      if (preset.price === null) {
+        $('prixHT').value = '';
+        $('km').focus();
+      } else {
+        $('km').value = '';
+        $('prixHT').value = preset.price.toFixed(2);
+      }
+      render();
+    });
+  }
 
   function issuerBlock() {
-    const lines = [];
-    lines.push(ENTREPRISE.raisonSociale || todo('Raison sociale'));
+    const lines = [ENTREPRISE.raisonSociale || todo('Raison sociale')];
     if (ENTREPRISE.formeJuridique) lines.push(ENTREPRISE.formeJuridique);
     lines.push(ENTREPRISE.adresse || todo('Adresse'));
     lines.push(`SIRET : ${ENTREPRISE.siret || todo('SIRET')}`);
@@ -326,19 +512,29 @@
   }
 
   function render() {
-    const type = $('type').value;
-    const isDevis = type === 'DEVIS';
-    const [, vatRate] = $('prestation').value.split('|');
+    const isDevis = $('type').value === 'DEVIS';
+    const [kind, vatRate] = $('prestation').value.split('|');
     const tva = Number(vatRate);
 
-    const prix = Number($('prixHT').value) || 0;
-    const supp = Number($('supplementHT').value) || 0;
-    const totalHT = prix + supp;
-    const montantTVA = Math.round(totalHT * tva) / 100;
-    const totalTTC = Math.round((totalHT + montantTVA) * 100) / 100;
+    // Transfert local : le prix se calcule au kilomètre.
+    const isLocal = kind === 'transfert';
+    $('kmField').hidden = !isLocal;
+    const km = Number($('km').value) || 0;
+    if (isLocal && km > 0) {
+      $('prixHT').value = Math.max(round2(km * RATE_PER_KM), MIN_FARE).toFixed(2);
+      if (!$('detail').value || /km ×/.test($('detail').value)) {
+        $('detail').value = `${km.toLocaleString('fr-FR')} km × ${euro.format(RATE_PER_KM)} HT`;
+      }
+    }
 
-    // Contenu issu des constantes ci-dessus uniquement : pas de saisie utilisateur.
-    $('issuer').innerHTML = issuerBlock();
+    const factor = $('allerRetour').checked ? 2 : 1;
+    const prix = round2((Number($('prixHT').value) || 0) * factor);
+    const supp = Number($('supplementHT').value) || 0;
+    const totalHT = round2(prix + supp);
+    const montantTVA = round2(totalHT * tva / 100);
+    const totalTTC = round2(totalHT + montantTVA);
+
+    $('issuer').innerHTML = issuerBlock();   // uniquement des constantes internes
     $('docType').textContent = isDevis ? 'DEVIS' : 'NOTE';
     $('docNum').textContent = $('numero').value ? `n° ${$('numero').value}` : '';
     $('docDate').textContent = frDate($('dateDoc').value);
@@ -352,27 +548,27 @@
       ? `<span>Client :</span> <strong>${escapeHtml(client)}</strong>${clientInfo ? ' · ' + escapeHtml(clientInfo) : ''}`
       : '<span>Client :</span> —';
 
-    const course = [
+    const when = [
       $('dateCourse').value ? `Le ${frDate($('dateCourse').value)}` : '',
       $('heure').value ? `à ${$('heure').value}` : '',
     ].filter(Boolean).join(' ');
     const trajet = [$('depart').value.trim(), $('arrivee').value.trim()].filter(Boolean).join(' → ');
-    const detail = $('detail').value.trim();
     const pax = Number($('passagers').value) || 1;
-
     const label = $('prestation').selectedOptions[0].textContent.split('—')[0].trim();
-    const descr = [
-      `<strong>${escapeHtml(label)}</strong>`,
-      trajet ? escapeHtml(trajet) : '',
-      course ? escapeHtml(course) : '',
-      `${pax} passager${pax > 1 ? 's' : ''}`,
-      detail ? escapeHtml(detail) : '',
-    ].filter(Boolean).join('<br>');
 
-    let rows = `<tr><td>${descr}</td><td class="num">${tva} %</td><td class="num">${euro.format(prix)}</td></tr>`;
+    const sub = [
+      trajet, when,
+      `${pax} passager${pax > 1 ? 's' : ''}`,
+      $('detail').value.trim(),
+      factor === 2 ? 'Aller-retour (×2)' : '',
+    ].filter(Boolean).map(escapeHtml).join('<br>');
+
+    let rows = `<tr>
+      <td><span class="line__title">${escapeHtml(label)}</span><br><span class="line__sub">${sub}</span></td>
+      <td class="num">${tva} %</td><td class="num">${euro.format(prix)}</td></tr>`;
     if (supp > 0) {
-      const suppLabel = $('supplementLabel').value.trim() || 'Supplément';
-      rows += `<tr><td>${escapeHtml(suppLabel)}</td><td class="num">${tva} %</td><td class="num">${euro.format(supp)}</td></tr>`;
+      rows += `<tr><td>${escapeHtml($('supplementLabel').value.trim() || 'Supplément')}</td>
+        <td class="num">${tva} %</td><td class="num">${euro.format(supp)}</td></tr>`;
     }
     $('lines').innerHTML = rows;
 
@@ -380,6 +576,7 @@
     $('tTvaLabel').textContent = `TVA ${tva} %`;
     $('tTVA').textContent = euro.format(montantTVA);
     $('tTTC').textContent = euro.format(totalTTC);
+    $('liveTotal').textContent = `${euro.format(totalTTC)} TTC`;
 
     const foot = [];
     if (isDevis) {
@@ -389,24 +586,16 @@
       foot.push(`Payé par ${$('paiement').value.toLowerCase()}.`);
       foot.push('Note remise au client conformément à l’arrêté du 3 octobre 1983.');
     }
-    if (!ENTREPRISE.siret) {
-      foot.push('⚠ Document incomplet : SIRET et numéro EVTC manquants.');
-    }
+    if (!ENTREPRISE.siret) foot.push('⚠ Document incomplet : SIRET et numéro EVTC manquants.');
     foot.push(`${ENTREPRISE.site} · ${ENTREPRISE.telephone}`);
     $('foot').textContent = foot.join('\n');
 
-    // Lien WhatsApp avec le résumé
     const resume = [
       `${isDevis ? 'Devis' : 'Note'} EJ-VTC${$('numero').value ? ' n° ' + $('numero').value : ''}`,
-      trajet, course,
+      trajet, when,
       `Total : ${euro.format(totalTTC)} TTC (dont TVA ${tva} % : ${euro.format(montantTVA)})`,
     ].filter(Boolean).join('\n');
     $('wa').href = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(resume)}`;
-  }
-
-  function escapeHtml(value) {
-    return String(value).replace(/[&<>"']/g, (c) =>
-      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
   function init() {
@@ -417,19 +606,16 @@
     render();
   }
 
-  document.getElementById('form').addEventListener('input', render);
-  document.getElementById('form').addEventListener('change', render);
-
-  $('print').addEventListener('click', () => {
-    commitNumero($('numero').value);
-    window.print();
-  });
-
+  $('form').addEventListener('input', render);
+  $('form').addEventListener('change', render);
+  $('print').addEventListener('click', () => { commitNumero($('numero').value); window.print(); });
   $('reset').addEventListener('click', () => {
-    document.getElementById('form').reset();
+    $('form').reset();
+    for (const chip of $('presets').children) chip.setAttribute('aria-pressed', 'false');
     init();
   });
 
+  buildPresets();
   init();
 })();
 </script>
