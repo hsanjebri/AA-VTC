@@ -424,11 +424,14 @@
      le document n'est pas conforme et le signale.
      ------------------------------------------------------------------ */
   const ENTREPRISE = {
-    raisonSociale: '',        // ex. "EJ-VTC" ou la raison sociale exacte
-    formeJuridique: '',       // ex. "Auto-entrepreneur"
-    adresse: '',              // ex. "12 rue Example, 76600 Le Havre"
-    siret: '',                // 14 chiffres (INSEE)
-    tva: '',                  // FR + 11 caractères, ou '' si franchise en base
+    raisonSociale: 'EJ-VTC',
+    // Entreprise individuelle : la dénomination légale est le nom de l'exploitant.
+    // Il doit figurer sur la note, le nom commercial seul ne suffit pas.
+    exploitant: 'Ezeddine JABRI',
+    formeJuridique: 'Entrepreneur individuel',
+    adresse: '32 rue de Reims, 76620 Le Havre',
+    siret: '890 613 565 00021',
+    tva: 'FR54890613565',     // assujetti : TVA 10 % sur le transport de personnes
     evtc: '',                 // numéro au registre VTC (macaron rouge du véhicule)
     telephone: '+33 6 52 80 74 88',
     email: 'contact@ej-vtc.fr',
@@ -507,6 +510,9 @@
 
   function issuerBlock() {
     const lines = [ENTREPRISE.raisonSociale || todo('Raison sociale')];
+    // Nom de l'exploitant : obligatoire pour une entreprise individuelle,
+    // le nom commercial seul ne permet pas de l'identifier.
+    if (ENTREPRISE.exploitant) lines.push(ENTREPRISE.exploitant);
     if (ENTREPRISE.formeJuridique) lines.push(ENTREPRISE.formeJuridique);
     lines.push(ENTREPRISE.adresse || todo('Adresse'));
     lines.push(`SIRET : ${ENTREPRISE.siret || todo('SIRET')}`);
@@ -591,7 +597,10 @@
       foot.push(`Payé par ${$('paiement').value.toLowerCase()}.`);
       foot.push('Note remise au client conformément à l’arrêté du 3 octobre 1983.');
     }
-    if (!ENTREPRISE.siret) foot.push('⚠ Document incomplet : SIRET et numéro EVTC manquants.');
+    const manquants = [];
+    if (!ENTREPRISE.siret) manquants.push('SIRET');
+    if (!ENTREPRISE.evtc) manquants.push('numéro EVTC');
+    if (manquants.length) foot.push(`⚠ Document incomplet : ${manquants.join(' et ')} manquant${manquants.length > 1 ? 's' : ''}.`);
     foot.push(`${ENTREPRISE.site} · ${ENTREPRISE.telephone}`);
     $('foot').textContent = foot.join('\n');
 

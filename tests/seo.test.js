@@ -184,6 +184,19 @@ describe('Legal pages and PWA files', () => {
     assert.ok(sitemap.includes(`${CANONICAL}/mentions-legales`), 'the legal notice is absent from the sitemap');
   });
 
+  // L'article 6-III de la LCEN impose l'identification de l'éditeur : une page
+  // de mentions légales qui garde des champs « À COMPLÉTER » ne vaut rien.
+  test('the identity of the operator is filled in, not left as a placeholder', () => {
+    const legal = readFileSync(join(PUBLIC, 'mentions-legales.html'), 'utf8');
+    for (const value of ['890 613 565 00021', 'FR54890613565', 'Ezeddine JABRI',
+      '32 rue de Reims, 76620 Le Havre', 'Entrepreneur individuel']) {
+      assert.ok(legal.includes(value), `missing from the legal notice: ${value}`);
+    }
+    for (const field of ['raison sociale', 'adresse complète', '14 chiffres', 'représentant légal']) {
+      assert.ok(!legal.includes(field), `still a placeholder in the legal notice: ${field}`);
+    }
+  });
+
   test('the 404 page exists and is excluded from indexing', () => {
     const notFound = join(PUBLIC, '404.html');
     assert.ok(existsSync(notFound), 'Cloudflare is configured for 404-page but the file is missing');
@@ -242,6 +255,24 @@ describe('Internal note / quote tool', () => {
   test('missing identifiers are flagged rather than silently omitted', () => {
     assert.ok(note.includes('Document incomplet'),
       'the page must warn when SIRET/EVTC are not filled in');
+  });
+});
+
+// Une note sans SIRET ni identité de l'exploitant n'est pas un justificatif
+// valable : ces champs doivent rester renseignés dans l'outil interne.
+describe("Identité de l'entreprise sur les documents", () => {
+  const note = readFileSync(join(PUBLIC, 'note.html'), 'utf8');
+
+  test('the note carries the SIRET, the VAT number and the operator name', () => {
+    assert.match(note, /siret: '890 613 565 00021'/);
+    assert.match(note, /tva: 'FR54890613565'/);
+    assert.match(note, /exploitant: 'Ezeddine JABRI'/);
+    assert.ok(note.includes('ENTREPRISE.exploitant'), 'the operator name is never printed');
+  });
+
+  test('a missing EVTC number is still flagged on the document', () => {
+    assert.ok(note.includes("manquants.push('numéro EVTC')"), 'a missing EVTC number goes unnoticed');
+    assert.ok(note.includes('Document incomplet'), 'no warning when a mandatory field is missing');
   });
 });
 
