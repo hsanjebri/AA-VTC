@@ -167,35 +167,7 @@ describe('Security of the published content', () => {
   });
 });
 
-describe('Legal pages and PWA files', () => {
-  test('the mentions légales page exists and is linked from the home page', () => {
-    assert.ok(existsSync(join(PUBLIC, 'mentions-legales.html')), 'mentions-legales.html is missing');
-    assert.ok(html.includes('href="/mentions-legales"'), 'the footer does not link to the legal notice');
-  });
-
-  test('the mentions légales page is indexable and declares its canonical URL', () => {
-    const legal = readFileSync(join(PUBLIC, 'mentions-legales.html'), 'utf8');
-    assert.match(legal, /<html[^>]+lang="fr"/);
-    assert.ok(legal.includes(`${CANONICAL}/mentions-legales`), 'canonical URL missing or off-domain');
-    assert.ok(!/content="noindex/.test(legal), 'the legal notice must stay indexable');
-  });
-
-  test('the sitemap lists the legal notice', () => {
-    assert.ok(sitemap.includes(`${CANONICAL}/mentions-legales`), 'the legal notice is absent from the sitemap');
-  });
-
-  // L'article 6-III de la LCEN impose l'identification de l'éditeur : une page
-  // de mentions légales qui garde des champs « À COMPLÉTER » ne vaut rien.
-  test('the identity of the operator is filled in, not left as a placeholder', () => {
-    const legal = readFileSync(join(PUBLIC, 'mentions-legales.html'), 'utf8');
-    for (const value of ['890 613 565 00021', 'FR54890613565', 'Ezeddine JABRI',
-      '32 rue de Reims, 76620 Le Havre', 'Entrepreneur individuel']) {
-      assert.ok(legal.includes(value), `missing from the legal notice: ${value}`);
-    }
-    for (const field of ['raison sociale', 'adresse complète', '14 chiffres', 'représentant légal']) {
-      assert.ok(!legal.includes(field), `still a placeholder in the legal notice: ${field}`);
-    }
-  });
+describe('Static pages and PWA files', () => {
 
   test('the 404 page exists and is excluded from indexing', () => {
     const notFound = join(PUBLIC, '404.html');
@@ -274,6 +246,26 @@ describe("Identité de l'entreprise sur les documents", () => {
     assert.ok(note.includes("manquants.push('numéro EVTC')"), 'a missing EVTC number goes unnoticed');
     assert.ok(note.includes('Document incomplet'), 'no warning when a mandatory field is missing');
   });
+
+  // Une facture entre professionnels sans ces mentions est irrégulière
+  // (art. L441-9 du code de commerce).
+  test('the tool can issue an invoice, not only a receipt', () => {
+    assert.match(note, /<option value="FACTURE"/, 'no invoice type in the form');
+    assert.ok(note.includes("FACTURE:"), 'FACTURE is not described among the document types');
+  });
+
+  test('an invoice carries the mandatory payment terms', () => {
+    assert.ok(note.includes('Échéance'), 'no due date on the invoice');
+    assert.ok(note.includes('Escompte pour paiement anticipé'), 'the discount term is missing');
+    assert.ok(note.includes('40 € pour frais de recouvrement'), 'the flat recovery fee is missing');
+    assert.ok(note.includes('L441-10'), 'the late-payment interest basis is missing');
+  });
+
+  test('an invoice demands the client address, a quote offers a signature box', () => {
+    assert.ok(note.includes("todo('Adresse du client')"), 'an invoice can be issued without the client address');
+    assert.ok(note.includes('Bon pour accord'), 'a quote cannot be returned signed');
+    assert.ok(note.includes("$('accord').hidden = !isDevis"), 'the signature box is not reserved for quotes');
+  });
 });
 
 describe('Journal des courses', () => {
@@ -300,7 +292,9 @@ describe('Journal des courses', () => {
   });
 
   test('numbering is allocated server-side and protected by a unique index', () => {
-    const schema = readFileSync(join(process.cwd(), 'migrations', '0001_journal.sql'), 'utf8');
+    // La dernière migration qui reconstruit la table doit reposer les index,
+    // sinon ils partent avec l'ancienne table et les doublons redeviennent possibles.
+    const schema = readFileSync(join(process.cwd(), 'migrations', '0002_facture.sql'), 'utf8');
     assert.ok(schema.includes('UNIQUE INDEX') && schema.includes('(annee, sequence)'),
       'a unique index is what actually prevents duplicate numbers');
     assert.ok(api.includes('MAX(sequence)'), 'the next number comes from the database');
@@ -314,5 +308,22 @@ describe('Journal des courses', () => {
 
   test('only the two legal VAT rates can be stored', () => {
     assert.ok(api.includes('body.tauxTva === 20 ? 20 : 10'));
+  });
+
+  test('an invoice counts as revenue, a quote does not', () => {
+    const schema = readFileSync(join(process.cwd(), 'migrations', '0002_facture.sql'), 'utf8');
+    assert.ok(schema.includes("type IN ('NOTE', 'FACTURE', 'DEVIS')"), 'the schema rejects invoices');
+    assert.ok(api.includes("ENCAISSEMENTS = new Set(['NOTE', 'FACTURE'])"),
+      'an invoice must be counted in the turnover');
+    assert.ok(api.includes('!ENCAISSEMENTS.has(r.type)'), 'the totals do not use that set');
+    assert.ok(!/ENCAISSEMENTS[^;]*DEVIS/.test(api), 'a quote is not a payment received');
+  });
+
+  test('rebuilding the table does not lose the existing documents', () => {
+    const schema = readFileSync(join(process.cwd(), 'migrations', '0002_facture.sql'), 'utf8');
+    assert.ok(schema.includes('INSERT INTO documents SELECT * FROM documents_old'),
+      'the rows must be copied before the old table is dropped');
+    assert.ok(schema.indexOf('INSERT INTO documents SELECT') < schema.indexOf('DROP TABLE documents_old'),
+      'the copy must happen before the drop');
   });
 });

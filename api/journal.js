@@ -9,7 +9,10 @@
 // doivent jamais être lisibles publiquement.
 
 const PRESTATIONS = new Set(['transfert', 'forfait', 'circuit', 'miseadispo']);
-const TYPES = new Set(['NOTE', 'DEVIS']);
+const TYPES = new Set(['NOTE', 'FACTURE', 'DEVIS']);
+// Un devis n'est pas un encaissement : il ne doit pas entrer dans le
+// chiffre d'affaires. Une note et une facture, si.
+const ENCAISSEMENTS = new Set(['NOTE', 'FACTURE']);
 const round2 = (n) => Math.round(n * 100) / 100;
 
 /** Comparaison à durée constante : évite de révéler le jeton caractère par caractère. */
@@ -122,7 +125,7 @@ async function list(url, env) {
 
   const totals = results.reduce(
     (acc, r) => {
-      if (r.type !== 'NOTE') return acc;
+      if (!ENCAISSEMENTS.has(r.type)) return acc;
       acc.courses += 1;
       acc.totalHt = round2(acc.totalHt + r.total_ht);
       acc.montantTva = round2(acc.montantTva + r.montant_tva);

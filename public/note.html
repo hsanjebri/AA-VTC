@@ -126,7 +126,30 @@
     }
     .doc__head { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
     .doc__brand { font-size: 1.1rem; letter-spacing: .24em; text-transform: uppercase; color: var(--navy); font-weight: 600; }
-    .doc__issuer { font-size: .78rem; color: var(--muted); margin-top: 10px; white-space: pre-line; line-height: 1.75; }
+    .doc__issuer { font-size: .78rem; color: var(--muted); margin-top: 10px; line-height: 1.7; }
+    .doc__issuer span { display: block; }
+    .doc__issuer .issuer__name { color: var(--navy); font-weight: 600; font-size: .86rem; }
+
+    /* Bloc « Facturé à » : sur une facture, l'identité du client est obligatoire. */
+    .doc__client {
+      font-size: .88rem; margin: 22px 0 0; padding: 14px 16px;
+      background: var(--cream); border: 1px solid var(--line); border-radius: 3px;
+      max-width: 340px; line-height: 1.7;
+    }
+    .doc__client .client__label {
+      display: block; font-size: .62rem; letter-spacing: .18em; text-transform: uppercase;
+      color: var(--gold-deep); margin-bottom: 5px; font-weight: 600;
+    }
+    .doc__client strong { color: var(--navy); }
+    .doc__client em { font-style: normal; color: var(--muted); display: block; }
+
+    /* Devis : le client doit pouvoir le retourner signé. */
+    .doc__accord {
+      margin-top: 26px; padding: 14px 16px; border: 1px dashed var(--line); border-radius: 3px;
+      font-size: .78rem; color: var(--muted);
+    }
+    .doc__accord b { display: block; color: var(--navy); font-size: .84rem; margin-bottom: 4px; }
+    .doc__accord i { display: block; font-style: normal; margin-top: 26px; border-top: 1px solid var(--line); padding-top: 5px; max-width: 220px; }
     .doc__meta { text-align: right; font-size: .82rem; color: var(--muted); }
     .doc__meta strong {
       display: block; font-family: var(--display); font-size: 1.2rem; font-weight: 500;
@@ -192,6 +215,9 @@
       .preview { position: static; }
       .doc { border: 0; box-shadow: none; padding: 0; }
       .todo { background: none; color: #000; border-bottom: 1px dotted #000; }
+      .doc__client { background: none; border-color: #999; }
+      /* Un document d'une page : rien ne doit se couper au milieu. */
+      table, .totals, .doc__client, .doc__accord, .doc__foot { break-inside: avoid; }
       @page { margin: 16mm; }
     }
     /* ---------- Téléphone : aller au formulaire le plus vite possible ---------- */
@@ -314,8 +340,8 @@
               <input id="client" type="text" placeholder="M. Dupont">
             </div>
             <div>
-              <label for="clientInfo">Société / adresse <span style="opacity:.6">(facultatif)</span></label>
-              <input id="clientInfo" type="text" placeholder="Pour une note professionnelle">
+              <label for="clientInfo">Société et adresse <span style="opacity:.6" id="clientInfoHint">(facultatif)</span></label>
+              <input id="clientInfo" type="text" placeholder="SARL Exemple, 1 rue X, 76600 Le Havre">
             </div>
             <div>
               <label for="paiement">Règlement</label>
@@ -342,7 +368,8 @@
             <div>
               <label for="type">Type</label>
               <select id="type">
-                <option value="NOTE">Note — après la course</option>
+                <option value="NOTE">Note — client particulier</option>
+                <option value="FACTURE">Facture — client professionnel</option>
                 <option value="DEVIS">Devis — avant la course</option>
               </select>
             </div>
@@ -354,6 +381,11 @@
             <div>
               <label for="dateDoc">Date du document</label>
               <input id="dateDoc" type="date">
+            </div>
+            <div id="echeanceField" hidden>
+              <label for="echeance">Échéance de règlement</label>
+              <input id="echeance" type="date">
+              <p class="hint">Obligatoire sur une facture professionnelle.</p>
             </div>
           </div>
         </section>
@@ -394,6 +426,12 @@
           <div><span>Total HT</span><span id="tHT"></span></div>
           <div><span id="tTvaLabel">TVA</span><span id="tTVA"></span></div>
           <div class="ttc"><span>Total TTC</span><span id="tTTC"></span></div>
+        </div>
+
+        <div class="doc__accord" id="accord" hidden>
+          <b>Bon pour accord</b>
+          Date, nom et signature du client :
+          <i></i>
         </div>
 
         <div class="doc__foot" id="foot"></div>
@@ -509,21 +547,39 @@
   }
 
   function issuerBlock() {
-    const lines = [ENTREPRISE.raisonSociale || todo('Raison sociale')];
-    // Nom de l'exploitant : obligatoire pour une entreprise individuelle,
-    // le nom commercial seul ne permet pas de l'identifier.
-    if (ENTREPRISE.exploitant) lines.push(ENTREPRISE.exploitant);
-    if (ENTREPRISE.formeJuridique) lines.push(ENTREPRISE.formeJuridique);
-    lines.push(ENTREPRISE.adresse || todo('Adresse'));
-    lines.push(`SIRET : ${ENTREPRISE.siret || todo('SIRET')}`);
-    lines.push(`N° VTC : ${ENTREPRISE.evtc || todo('EVTC')}`);
-    if (ENTREPRISE.tva) lines.push(`TVA : ${ENTREPRISE.tva}`);
-    lines.push(`${ENTREPRISE.telephone} · ${ENTREPRISE.email}`);
-    return lines.join('\n');
+    const lines = [];
+    // Entreprise individuelle : c'est le nom de l'exploitant qui identifie le
+    // redevable. Le nom commercial seul ne suffit pas sur un document comptable.
+    lines.push(`<span class="issuer__name">${ENTREPRISE.exploitant || todo('Exploitant')}</span>`);
+    const forme = [
+      ENTREPRISE.formeJuridique,
+      ENTREPRISE.raisonSociale ? `nom commercial ${ENTREPRISE.raisonSociale}` : '',
+    ].filter(Boolean).join(' — ');
+    if (forme) lines.push(`<span>${forme}</span>`);
+    lines.push(`<span>${ENTREPRISE.adresse || todo('Adresse')}</span>`);
+    lines.push(`<span>SIRET ${ENTREPRISE.siret || todo('SIRET')}</span>`);
+    if (ENTREPRISE.tva) lines.push(`<span>TVA ${ENTREPRISE.tva}</span>`);
+    lines.push(ENTREPRISE.evtc
+      ? `<span>N° EVTC ${ENTREPRISE.evtc}</span>`
+      : `<span>${todo('N° EVTC')}</span>`);
+    lines.push(`<span>${ENTREPRISE.telephone} · ${ENTREPRISE.email}</span>`);
+    return lines.join('');
   }
 
+  // Trois documents, trois régimes : la note pour un particulier, la facture
+  // pour un client professionnel (mentions de règlement obligatoires), le devis
+  // avant la course.
+  const DOCUMENTS = {
+    NOTE:    { titre: 'Note',    pour: 'Client' },
+    FACTURE: { titre: 'Facture', pour: 'Facturé à' },
+    DEVIS:   { titre: 'Devis',   pour: 'Devis établi pour' },
+  };
+  const SOUS_TITRE = 'transport de personnes avec chauffeur';
+
   function render() {
-    const isDevis = $('type').value === 'DEVIS';
+    const docType = DOCUMENTS[$('type').value] ? $('type').value : 'NOTE';
+    const isDevis = docType === 'DEVIS';
+    const isFacture = docType === 'FACTURE';
     const [kind, vatRate] = $('prestation').value.split('|');
     const tva = Number(vatRate);
 
@@ -546,18 +602,25 @@
     const totalTTC = round2(totalHT + montantTVA);
 
     $('issuer').innerHTML = issuerBlock();   // uniquement des constantes internes
-    $('docType').textContent = isDevis ? 'DEVIS' : 'NOTE';
+    $('docType').textContent = docType;
     $('docNum').textContent = $('numero').value ? `n° ${$('numero').value}` : '';
     $('docDate').textContent = frDate($('dateDoc').value);
-    $('docTitle').textContent = isDevis
-      ? 'Devis — transport de personnes avec chauffeur'
-      : 'Note — transport de personnes avec chauffeur';
+    $('docTitle').textContent = `${DOCUMENTS[docType].titre} — ${SOUS_TITRE}`;
+    $('echeanceField').hidden = !isFacture;
+    $('accord').hidden = !isDevis;
+    $('clientInfoHint').textContent = isFacture ? '(obligatoire)' : '(facultatif)';
 
+    // Sur une facture, l'adresse du client est une mention obligatoire : on la
+    // réclame visiblement plutôt que d'émettre un document irrégulier.
     const client = $('client').value.trim();
     const clientInfo = $('clientInfo').value.trim();
-    $('docClient').innerHTML = client
-      ? `<span>Client :</span> <strong>${escapeHtml(client)}</strong>${clientInfo ? ' · ' + escapeHtml(clientInfo) : ''}`
-      : '<span>Client :</span> —';
+    const clientLines = [
+      client ? `<strong>${escapeHtml(client)}</strong>` : todo('Nom du client'),
+      clientInfo ? `<em>${escapeHtml(clientInfo)}</em>`
+        : (isFacture ? `<em>${todo('Adresse du client')}</em>` : ''),
+    ].filter(Boolean);
+    $('docClient').innerHTML =
+      `<span class="client__label">${DOCUMENTS[docType].pour}</span>${clientLines.join('')}`;
 
     const when = [
       $('dateCourse').value ? `Le ${frDate($('dateCourse').value)}` : '',
@@ -590,11 +653,22 @@
     $('liveTotal').textContent = `${euro.format(totalTTC)} TTC`;
 
     const foot = [];
+    const paiement = $('paiement').value;
     if (isDevis) {
-      foot.push('Devis valable 30 jours. Prix ferme pour le trajet décrit ci-dessus.');
-      foot.push('Des frais de prise en charge supplémentaires peuvent éventuellement s’appliquer en cas de modification du trajet.');
+      foot.push('Devis gratuit, valable 30 jours à compter de la date ci-dessus.');
+      foot.push('Prix ferme pour le trajet décrit. Toute modification du trajet fera l’objet d’un nouveau devis.');
+    } else if (isFacture) {
+      // Mentions imposées par l'article L441-9 du code de commerce sur une
+      // facture entre professionnels : sans elles, la facture est irrégulière.
+      foot.push(paiement === 'À régler'
+        ? `Règlement à réception. Échéance : ${$('echeance').value ? frDate($('echeance').value) : todo('échéance')}.`
+        : `Réglée par ${paiement.toLowerCase()} le ${frDate($('dateDoc').value)}.`);
+      foot.push('Escompte pour paiement anticipé : néant.');
+      foot.push('Retard de paiement : intérêts au taux de refinancement de la BCE majoré de 10 points, '
+        + 'et indemnité forfaitaire de 40 € pour frais de recouvrement '
+        + '(art. L441-10 et D441-5 du code de commerce).');
     } else {
-      foot.push(`Payé par ${$('paiement').value.toLowerCase()}.`);
+      foot.push(`Payé par ${paiement.toLowerCase()}.`);
       foot.push('Note remise au client conformément à l’arrêté du 3 octobre 1983.');
     }
     const manquants = [];
@@ -602,10 +676,10 @@
     if (!ENTREPRISE.evtc) manquants.push('numéro EVTC');
     if (manquants.length) foot.push(`⚠ Document incomplet : ${manquants.join(' et ')} manquant${manquants.length > 1 ? 's' : ''}.`);
     foot.push(`${ENTREPRISE.site} · ${ENTREPRISE.telephone}`);
-    $('foot').textContent = foot.join('\n');
+    $('foot').innerHTML = foot.join('<br>');   // uniquement des constantes internes
 
     const resume = [
-      `${isDevis ? 'Devis' : 'Note'} EJ-VTC${$('numero').value ? ' n° ' + $('numero').value : ''}`,
+      `${DOCUMENTS[docType].titre} EJ-VTC${$('numero').value ? ' n° ' + $('numero').value : ''}`,
       trajet, when,
       `Total : ${euro.format(totalTTC)} TTC (dont TVA ${tva} % : ${euro.format(montantTVA)})`,
     ].filter(Boolean).join('\n');

@@ -14,7 +14,7 @@ d'**IGN Géoplateforme** (service public gratuit). Le site ne stocke rien.
 
 | Chemin | Rôle |
 |---|---|
-| `public/` | **Tout ce qui est publié** : pages (`index`, `mentions-legales`, `404`), styles, scripts, images, `_headers`, `robots.txt`, `sitemap.xml`, `site.webmanifest`, `.well-known/security.txt` |
+| `public/` | **Tout ce qui est publié** : pages (`index`, `404`), styles, scripts, images, `_headers`, `robots.txt`, `sitemap.xml`, `site.webmanifest`, `.well-known/security.txt` |
 | `worker.js` | Entrée Cloudflare : redirections canoniques, en-têtes de sécurité, route `/api/fare` |
 | `api/fare.js` | Estimation : géocodage + itinéraire IGN, puis tarif |
 | `api/_lib/pricing.js` | Tarifs et TVA (source unique) |
@@ -125,13 +125,31 @@ Mise à disposition : 1 h/60 €, 4 h/300 €, 8 h/580 € — **TVA 20 %**, km 
 Forfaits aéroports au départ du Havre (Orly 376, Roissy 410, Caen 120, Deauville 45) et circuits :
 kilométrage inclus, **TVA 10 %**. L'estimateur propose automatiquement le forfait quand il s'applique.
 
-## Pages légales
+## Identité de l'exploitant
 
-`public/mentions-legales.html` est **obligatoire** pour un site commercial français
-(article 6-III de la LCEN). Les champs surlignés en jaune sur la page
-(`À COMPLÉTER`) doivent être renseignés avant toute exploitation : raison sociale,
-SIRET, numéro d'inscription au registre VTC (EVTC), assurance RC professionnelle
-et médiateur de la consommation.
+Elle vit à un seul endroit, la constante `ENTREPRISE` en tête du script de
+`public/note.html`, parce que son seul usage est d'identifier l'émetteur sur les
+notes, factures et devis remis aux clients.
+
+| | |
+|---|---|
+| Exploitant | Ezeddine JABRI — nom commercial EJ-VTC |
+| Forme juridique | Entrepreneur individuel |
+| Adresse | 32 rue de Reims, 76620 Le Havre |
+| SIRET | 890 613 565 00021 |
+| TVA | FR54890613565 (assujetti, 10 % sur le transport de personnes) |
+| N° EVTC | **manquant** — le document le signale tant qu'il n'est pas saisi |
+
+### Trois documents
+
+| | Pour qui | Mentions particulières |
+|---|---|---|
+| **Note** | Particulier | Arrêté du 3 octobre 1983 : remise avant paiement dès 25 € TTC |
+| **Facture** | Client professionnel | Échéance, escompte, pénalités de retard et indemnité de 40 € (art. L441-9 et L441-10 du code de commerce) ; adresse du client exigée |
+| **Devis** | Avant la course | Gratuit, valable 30 jours, zone « Bon pour accord » à signer |
+
+Note et facture entrent dans le chiffre d'affaires du journal, le devis non :
+un devis n'est pas un encaissement.
 
 `public/404.html` répond aux adresses inconnues (`not_found_handling: 404-page`
 dans `wrangler.jsonc`) et `.well-known/security.txt` donne un point de contact
