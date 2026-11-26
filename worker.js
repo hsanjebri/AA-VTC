@@ -1,9 +1,7 @@
 // Cloudflare Worker entry.
 // public/ is served as static assets. Deux points d'entrée serveur :
 //   /api/fare    — estimation de tarif, public
-//   /api/journal — journal des courses, protégé par jeton
 import fare from './api/fare.js';
-import journal from './api/journal.js';
 
 const ROUTES = { '/api/fare': fare };
 
@@ -101,21 +99,6 @@ export default {
       target.protocol = 'https:';
       target.port = '';
       return Response.redirect(target.toString(), 301);
-    }
-
-    // Le journal est un handler Worker natif : il ne passe pas par le shim
-    // Express de runHandler, et il a sa propre authentification.
-    if (url.pathname.startsWith('/api/journal')) {
-      let response;
-      try {
-        response = await journal(request, env);
-      } catch (err) {
-        console.error('[worker] journal', err?.message);
-        response = Response.json({ error: 'server_error' }, { status: 500 });
-      }
-      response = new Response(response.body, response);
-      for (const [name, value] of Object.entries(SECURITY_HEADERS)) response.headers.set(name, value);
-      return response;
     }
 
     const handler = ROUTES[url.pathname.replace(/\/$/, '')];
