@@ -151,6 +151,24 @@ notes, factures et devis remis aux clients.
 Note et facture entrent dans le chiffre d'affaires du journal, le devis non :
 un devis n'est pas un encaissement.
 
+## Tableau de bord
+
+`/admin` — même clé que le journal, même API. Quatre chiffres du trimestre
+(dont la **TVA collectée**, le montant à reverser), le chiffre d'affaires HT des
+douze derniers mois, les destinations les plus courantes et la répartition des
+documents.
+
+Les agrégats sont calculés en SQL et envoyés en un seul `batch()` : le plan
+gratuit accorde 10 ms de processeur par requête, ce qui interdit d'additionner
+les lignes en JavaScript. Un mois sans course apparaît à zéro, reconstruit
+côté navigateur — sans quoi l'axe se resserre et la série ment.
+
+Les graphiques n'utilisent aucune bibliothèque. La palette (`--series-1` à
+`--series-3`) est dérivée de la charte et validée pour le daltonisme : écart
+le plus faible ΔE 9,7 en vision des couleurs déficiente, 17,1 en vision
+normale. L'or passant sous 3:1 sur fond blanc, chaque graphique porte une
+légende écrite et une vue tableau.
+
 `public/404.html` répond aux adresses inconnues (`not_found_handling: 404-page`
 dans `wrangler.jsonc`) et `.well-known/security.txt` donne un point de contact
 normalisé (RFC 9116) pour signaler une faille.

@@ -138,6 +138,106 @@ async function list(url, env) {
   return json({ documents: results, totals });
 }
 
+/**
+ * Agrégats du tableau de bord.
+ *
+ * Tout est calculé en SQL et en un seul aller-retour : le Worker gratuit
+ * dispose de 10 ms de processeur par requête, ce qui interdit de rapatrier les
+ * lignes pour les additionner en JavaScript.
+ *
+ * Les devis sont exclus partout où il est question d'argent encaissé : un devis
+ * n'est pas une recette. Ils ne reviennent que dans la répartition des
+ * documents, et dans le taux de transformation.
+ */
+async function stats(url, env) {
+  const today = url.searchParams.get('today') || new Date().toISOString().slice(0, 10);
+  const annee = Number(today.slice(0, 4));
+  const mois = Number(today.slice(5, 7));
+  const trimestre = Math.floor((mois - 1) / 3) + 1;
+  const debutTrimestre = `${annee}-${String((trimestre - 1) * 3 + 1).padStart(2, '0')}-01`;
+
+  // 12 mois glissants, bornés au premier jour du mois d'il y a onze mois.
+  const debutSerie = new Date(Date.UTC(annee, mois - 12, 1)).toISOString().slice(0, 7);
+
+  const ENCAISSE = "type IN ('NOTE', 'FACTURE')";
+
+  const [parMois, parType, destinations, paiements, trimestreRow, total] = await env.JOURNAL.batch([
+    env.JOURNAL.prepare(
+      `SELECT substr(date_doc, 1, 7) AS mois,
+              COUNT(*) AS courses,
+              SUM(total_ht) AS total_ht,
+              SUM(montant_tva) AS montant_tva,
+              SUM(total_ttc) AS total_ttc
+       FROM documents WHERE ${ENCAISSE} AND substr(date_doc, 1, 7) >= ?
+       GROUP BY mois ORDER BY mois ASC`,
+    ).bind(debutSerie),
+
+    env.JOURNAL.prepare(
+      'SELECT type, COUNT(*) AS n FROM documents GROUP BY type',
+    ),
+
+    env.JOURNAL.prepare(
+      `SELECT arrivee, COUNT(*) AS courses, SUM(total_ttc) AS total_ttc
+       FROM documents
+       WHERE ${ENCAISSE} AND arrivee IS NOT NULL AND TRIM(arrivee) <> ''
+       GROUP BY arrivee ORDER BY courses DESC, total_ttc DESC LIMIT 8`,
+    ),
+
+    env.JOURNAL.prepare(
+      `SELECT COALESCE(NULLIF(TRIM(paiement), ''), 'Non précisé') AS paiement,
+              COUNT(*) AS n
+       FROM documents WHERE ${ENCAISSE} GROUP BY paiement ORDER BY n DESC`,
+    ),
+
+    env.JOURNAL.prepare(
+      `SELECT COUNT(*) AS courses,
+              COALESCE(SUM(total_ht), 0)     AS total_ht,
+              COALESCE(SUM(montant_tva), 0)  AS montant_tva,
+              COALESCE(SUM(total_ttc), 0)    AS total_ttc
+       FROM documents WHERE ${ENCAISSE} AND date_doc >= ? AND date_doc <= ?`,
+    ).bind(debutTrimestre, today),
+
+    env.JOURNAL.prepare(
+      `SELECT COUNT(*) AS courses, COALESCE(SUM(total_ttc), 0) AS total_ttc
+       FROM documents WHERE ${ENCAISSE}`,
+    ),
+  ]);
+
+  const t = trimestreRow.results[0] || { courses: 0, total_ht: 0, montant_tva: 0, total_ttc: 0 };
+  const g = total.results[0] || { courses: 0, total_ttc: 0 };
+  const compte = (type) => parType.results.find((r) => r.type === type)?.n || 0;
+  const devis = compte('DEVIS');
+
+  return json({
+    aujourdhui: today,
+    trimestre: {
+      libelle: `T${trimestre} ${annee}`,
+      debut: debutTrimestre,
+      courses: t.courses,
+      totalHt: round2(t.total_ht),
+      montantTva: round2(t.montant_tva),
+      totalTtc: round2(t.total_ttc),
+      panierMoyen: t.courses ? round2(t.total_ttc / t.courses) : 0,
+    },
+    parMois: parMois.results.map((r) => ({
+      mois: r.mois,
+      courses: r.courses,
+      totalHt: round2(r.total_ht),
+      montantTva: round2(r.montant_tva),
+      totalTtc: round2(r.total_ttc),
+    })),
+    parType: { NOTE: compte('NOTE'), FACTURE: compte('FACTURE'), DEVIS: devis },
+    // Pas de taux de transformation : la base ne relie pas un devis à la course
+    // qui en découle, et le rapport des volumes n'en est pas une approximation
+    // honnête. On se contente de compter les devis.
+    destinations: destinations.results.map((r) => ({
+      arrivee: r.arrivee, courses: r.courses, totalTtc: round2(r.total_ttc),
+    })),
+    paiements: paiements.results.map((r) => ({ paiement: r.paiement, n: r.n })),
+    total: { courses: g.courses, totalTtc: round2(g.total_ttc) },
+  });
+}
+
 /** Export CSV pour le comptable. */
 async function exportCsv(url, env) {
   const month = text(url.searchParams.get('month'), 7);
@@ -178,7 +278,9 @@ export default async function handler(request, env) {
       return await create(body, env);
     }
     if (request.method === 'GET') {
-      return url.pathname.endsWith('/export') ? await exportCsv(url, env) : await list(url, env);
+      if (url.pathname.endsWith('/export')) return await exportCsv(url, env);
+      if (url.pathname.endsWith('/stats')) return await stats(url, env);
+      return await list(url, env);
     }
     return json({ error: 'method_not_allowed' }, 405);
   } catch (err) {

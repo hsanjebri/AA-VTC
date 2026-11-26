@@ -155,8 +155,10 @@ describe('Security of the published content', () => {
   });
 
   test('no leftover of the removed admin area', () => {
-    // "AdministrativeArea" (Normandie, in the JSON-LD) is legitimate: we target /admin.
-    const found = published.filter((f) => /\/admin\b|api\/admin|\/api\/booking/.test(readFileSync(f, 'utf8')));
+    // Le tableau de bord occupe aujourd'hui /admin, légitimement : il passe par
+    // l'API du journal, protégée par jeton. Ce qui ne doit pas revenir, c'est
+    // l'ancienne API d'administration, ouverte et sans authentification.
+    const found = published.filter((f) => /api\/admin|\/api\/booking/.test(readFileSync(f, 'utf8')));
     assert.deepEqual(found, []);
   });
 
@@ -265,6 +267,60 @@ describe("Identité de l'entreprise sur les documents", () => {
     assert.ok(note.includes("todo('Adresse du client')"), 'an invoice can be issued without the client address');
     assert.ok(note.includes('Bon pour accord'), 'a quote cannot be returned signed');
     assert.ok(note.includes("$('accord').hidden = !isDevis"), 'the signature box is not reserved for quotes');
+  });
+});
+
+// Le tableau de bord lit les mêmes données que le journal : il doit être
+// aussi fermé que lui, et ses agrégats doivent exclure les devis.
+describe('Tableau de bord', () => {
+  const admin = readFileSync(join(PUBLIC, 'admin.html'), 'utf8');
+  const api = readFileSync(join(process.cwd(), 'api', 'journal.js'), 'utf8');
+
+  test('the dashboard stays private', () => {
+    assert.match(admin, /content="noindex/);
+    assert.ok(robots.includes('Disallow: /admin'));
+    assert.ok(!sitemap.includes('/admin'));
+    assert.ok(!html.includes('/admin'), 'never linked from the public page');
+  });
+
+  test('the dashboard goes through the same token as the journal', () => {
+    assert.ok(admin.includes("'ejvtc.journalToken'"), 'it must reuse the journal key');
+    assert.ok(admin.includes('Authorization'), 'the API call must carry the token');
+    assert.ok(!/JOURNAL_TOKEN|Bearer [A-Za-z0-9]{8}/.test(admin), 'no key may be committed');
+  });
+
+  test('money figures never count quotes', () => {
+    assert.ok(api.includes("ENCAISSE = \"type IN ('NOTE', 'FACTURE')\""),
+      'the aggregates must filter on paid documents only');
+    const stats = api.slice(api.indexOf('async function stats'), api.indexOf('/** Export CSV'));
+    for (const query of ['total_ht', 'destinations', 'paiement']) {
+      assert.ok(stats.includes(query), `the stats query lost ${query}`);
+    }
+    // Chaque requête qui additionne de l'argent porte le filtre ; seule celle
+    // qui compte les documents par type s'en passe, et elle ne somme rien.
+    const sommes = stats.split('env.JOURNAL.prepare').filter((q) => q.includes('SUM('));
+    assert.ok(sommes.length >= 4, 'unexpectedly few aggregate queries');
+    for (const q of sommes) {
+      assert.ok(q.includes('${ENCAISSE}'), 'an aggregate query is missing the paid-only filter');
+    }
+  });
+
+  test('every aggregate is computed in SQL, in one round trip', () => {
+    // 10 ms de processeur par requête sur le plan gratuit : additionner les
+    // lignes en JavaScript ne passerait pas à l'échelle.
+    assert.ok(api.includes('JOURNAL.batch('), 'the six queries must travel together');
+    assert.ok(api.includes('COALESCE(SUM(total_ht), 0)'), 'an empty quarter must read 0, not null');
+  });
+
+  test('a month without a course still appears on the axis', () => {
+    assert.ok(admin.includes('function douzeMois'), 'the time axis must be built client-side');
+    assert.ok(admin.includes('|| { mois, courses: 0'), 'a missing month must fall back to zero');
+  });
+
+  test('colour is never the only carrier of meaning', () => {
+    assert.ok(admin.includes('mixLegend'), 'the breakdown needs a legend');
+    assert.ok(admin.includes('monthsTable'), 'the chart needs a table view');
+    assert.ok(admin.includes('--series-1: #2F5C9E'), 'the validated palette is expected');
   });
 });
 

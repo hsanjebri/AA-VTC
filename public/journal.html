@@ -98,6 +98,7 @@
     <nav>
       <a href="/note">Nouvelle note</a>
       <a href="/journal" aria-current="page">Journal</a>
+      <a href="/admin">Tableau de bord</a>
     </nav>
   </div>
 </header>
@@ -213,8 +214,11 @@
     $('csv').href = `/api/journal/export?${params}`;
   }
 
-  async function unlock() {
-    const value = $('token').value.trim();
+  // La clé peut venir du champ, ou de la session quand on revient sur la page.
+  // Sans ce second cas, un retour affichait de nouveau la porte : le champ est
+  // vide, et la fonction abandonnait avant même d'essayer la clé mémorisée.
+  async function unlock(depuisSession = false) {
+    const value = depuisSession ? token() : $('token').value.trim();
     if (!value) return;
     try { sessionStorage.setItem(KEY, value); } catch { /* ignore */ }
     try {
@@ -250,7 +254,7 @@
   let timer;
   $('search').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(load, 250); });
 
-  if (token()) unlock();
+  if (token()) unlock(true);
 })();
 </script>
 </body>
