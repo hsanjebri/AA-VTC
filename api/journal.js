@@ -8,12 +8,28 @@
 // dans le dépôt. Ces données contiennent des informations clients, elles ne
 // doivent jamais être lisibles publiquement.
 
+import { normaliserTelephone } from './_lib/entreprise.js';
+
 const PRESTATIONS = new Set(['transfert', 'forfait', 'circuit', 'miseadispo']);
 const TYPES = new Set(['NOTE', 'FACTURE', 'DEVIS']);
 // Un devis n'est pas un encaissement : il ne doit pas entrer dans le
 // chiffre d'affaires. Une note et une facture, si.
 const ENCAISSEMENTS = new Set(['NOTE', 'FACTURE']);
 const round2 = (n) => Math.round(n * 100) / 100;
+
+/**
+ * Jeton du lien client : 128 bits tirés au hasard, encodés en base64url.
+ *
+ * C'est la seule chose qui protège le document, donc elle ne doit dépendre
+ * d'aucune donnée de la course. Un numéro de ligne ou un hachage du numéro de
+ * facture se devinerait ; 2^128 possibilités, non.
+ */
+function nouveauJeton() {
+  const octets = crypto.getRandomValues(new Uint8Array(16));
+  let binaire = '';
+  for (const o of octets) binaire += String.fromCharCode(o);
+  return btoa(binaire).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
 
 /** Comparaison à durée constante : évite de révéler le jeton caractère par caractère. */
 function safeEqual(a, b) {
@@ -63,6 +79,10 @@ async function create(body, env) {
   const dateDoc = text(body.dateDoc, 10) || new Date().toISOString().slice(0, 10);
   const annee = Number(dateDoc.slice(0, 4)) || new Date().getFullYear();
 
+  const telephone = text(body.telephone, 30);
+  const telephoneNorm = normaliserTelephone(telephone || '');
+  const jeton = nouveauJeton();
+
   for (let attempt = 0; attempt < 5; attempt++) {
     const row = await env.JOURNAL.prepare(
       'SELECT COALESCE(MAX(sequence), 0) AS last FROM documents WHERE annee = ?',
@@ -77,8 +97,9 @@ async function create(body, env) {
            client, client_info, depart, arrivee, passagers,
            prestation, detail, aller_retour, km,
            prix_ht, supplement_ht, supplement_label,
-           taux_tva, total_ht, montant_tva, total_ttc, paiement
-         ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+           taux_tva, total_ht, montant_tva, total_ttc, paiement,
+           jeton, telephone, telephone_norm, echeance
+         ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       ).bind(
         numero, annee, sequence, type, dateDoc,
         text(body.dateCourse, 10), text(body.heure, 5),
@@ -88,9 +109,12 @@ async function create(body, env) {
         body.km ? round2(num(body.km)) : null,
         prixHt, supplementHt, text(body.supplementLabel),
         tauxTva, totalHt, montantTva, totalTtc, text(body.paiement, 40),
+        jeton, telephone, telephoneNorm, text(body.echeance, 10),
       ).run();
 
-      return json({ numero, annee, sequence, totalHt, montantTva, totalTtc }, 201);
+      // Le lien part avec la réponse : la page peut proposer de l'envoyer au
+      // client sans avoir à redemander quoi que ce soit au serveur.
+      return json({ numero, annee, sequence, totalHt, montantTva, totalTtc, jeton }, 201);
     } catch (err) {
       // Collision sur (annee, sequence) : un autre document vient de prendre
       // ce numéro, on retente avec le suivant.

@@ -272,6 +272,103 @@ describe("Identité de l'entreprise sur les documents", () => {
 
 // Le tableau de bord lit les mêmes données que le journal : il doit être
 // aussi fermé que lui, et ses agrégats doivent exclure les devis.
+// Le lien client n'a pas d'authentification : le jeton est la clé. Tout ce qui
+// suit vérifie qu'il mérite ce rôle, et qu'un document nominatif ne fuit pas.
+describe('Lien privé du client', () => {
+  const api = readFileSync(join(process.cwd(), 'api', 'journal.js'), 'utf8');
+  const doc = readFileSync(join(process.cwd(), 'api', 'document.js'), 'utf8');
+  const note = readFileSync(join(PUBLIC, 'note.html'), 'utf8');
+
+  test('the token is random, not derived from the document', () => {
+    assert.ok(api.includes('crypto.getRandomValues(new Uint8Array(16))'),
+      '128 bits of randomness is what makes the link unguessable');
+    // Un jeton dérivé du numéro ou de l'identifiant se recalcule, donc se devine.
+    const fn = api.slice(api.indexOf('function nouveauJeton'), api.indexOf('/** Comparaison'));
+    for (const graine of ['numero', 'sequence', 'id', 'Date.now']) {
+      assert.ok(!fn.includes(graine), `the token must not depend on ${graine}`);
+    }
+  });
+
+  test('an unknown token and a malformed one are indistinguishable', () => {
+    // Deux réponses différentes permettraient de savoir qu'un jeton existe.
+    assert.ok(doc.includes('const introuvable = () =>'), 'a single not-found response is expected');
+    assert.equal(doc.split('return introuvable()').length - 1, 2,
+      'a malformed token and an unknown one must share one response');
+  });
+
+  test('a nominative document is never cached nor indexed', () => {
+    assert.ok(doc.includes("'Cache-Control': 'no-store, private'"), 'no shared cache');
+    assert.ok(doc.includes('noindex, nofollow, noarchive'), 'never indexed');
+    assert.ok(robots.includes('Disallow: /f/'));
+    assert.ok(!sitemap.includes('/f/'));
+    assert.ok(!html.includes('/f/'), 'never linked from the public page');
+  });
+
+  test('the client copy carries the mandatory invoice mentions', () => {
+    assert.ok(doc.includes('40 € pour frais de recouvrement'), 'the flat recovery fee is missing');
+    assert.ok(doc.includes('L441-10'), 'the late-payment basis is missing');
+    assert.ok(doc.includes('Échéance'), 'the due date is missing');
+    assert.ok(doc.includes('arrêté du 3 octobre 1983'), 'the receipt mention is missing');
+  });
+
+  test('the due date reaches the database, so both copies agree', () => {
+    const schema = readFileSync(join(process.cwd(), 'migrations', '0003_lien_client.sql'), 'utf8');
+    assert.ok(schema.includes('echeance'), 'the due date must be stored');
+    assert.ok(note.includes("echeance: $('echeance').value"), 'the form must send it');
+    assert.ok(api.includes("text(body.echeance, 10)"), 'the API must persist it');
+  });
+
+  test('a token designates exactly one document', () => {
+    const schema = readFileSync(join(process.cwd(), 'migrations', '0003_lien_client.sql'), 'utf8');
+    assert.ok(schema.includes('CREATE UNIQUE INDEX IF NOT EXISTS idx_documents_jeton'),
+      'without a unique index two documents could share a link');
+  });
+
+  test('the driver can send and re-send the link without reissuing a document', () => {
+    assert.ok(note.includes('function preparerEnvoi'), 'no way to send the link after issuing');
+    assert.ok(note.includes('wa.me/'), 'the link must go out through WhatsApp');
+    const journal = readFileSync(join(PUBLIC, 'journal.html'), 'utf8');
+    assert.ok(journal.includes('function lienWhatsApp'), 'a lost link must be re-sendable');
+  });
+});
+
+describe("Identité partagée entre la page et le serveur", () => {
+  const champs = (texte) => {
+    const bloc = texte.slice(texte.indexOf('ENTREPRISE = {'));
+    const out = {};
+    for (const [, cle, val] of bloc.slice(0, bloc.indexOf('};')).matchAll(/(\w+):\s*'([^']*)'/g)) {
+      out[cle] = val;
+    }
+    return out;
+  };
+
+  test('the page and the server state the same identity', () => {
+    // Deux copies qui divergent, ce sont deux documents qui ne s'accordent pas :
+    // l'aperçu du chauffeur et la copie du client.
+    const page = champs(readFileSync(join(PUBLIC, 'note.html'), 'utf8'));
+    const serveur = champs(readFileSync(join(process.cwd(), 'api', '_lib', 'entreprise.js'), 'utf8'));
+    for (const cle of ['raisonSociale', 'exploitant', 'formeJuridique', 'adresse', 'siret', 'tva', 'telephone', 'email']) {
+      assert.equal(page[cle], serveur[cle], `${cle} differs between the page and the server`);
+    }
+  });
+});
+
+describe('Normalisation du numéro de téléphone', () => {
+  test('the same client written three ways is one client', async () => {
+    const { normaliserTelephone } = await import('../api/_lib/entreprise.js');
+    for (const saisie of ['06 12 34 56 78', '0612345678', '+33 6 12 34 56 78', '0033612345678']) {
+      assert.equal(normaliserTelephone(saisie), '33612345678', `failed on ${saisie}`);
+    }
+  });
+
+  test('nonsense is rejected rather than stored as an identity', async () => {
+    const { normaliserTelephone } = await import('../api/_lib/entreprise.js');
+    for (const saisie of ['', 'bonjour', '12', null, undefined, '06 12 34']) {
+      assert.equal(normaliserTelephone(saisie), null, `should reject ${saisie}`);
+    }
+  });
+});
+
 describe('Tableau de bord', () => {
   const admin = readFileSync(join(PUBLIC, 'admin.html'), 'utf8');
   const api = readFileSync(join(process.cwd(), 'api', 'journal.js'), 'utf8');

@@ -5,5 +5,7 @@ Disallow: /api/
 Disallow: /note
 Disallow: /journal
 Disallow: /admin
+# Documents nominatifs remis aux clients : jamais indexés.
+Disallow: /f/
 
 Sitemap: https://ej-vtc.fr/sitemap.xml

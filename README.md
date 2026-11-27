@@ -151,6 +151,29 @@ notes, factures et devis remis aux clients.
 Note et facture entrent dans le chiffre d'affaires du journal, le devis non :
 un devis n'est pas un encaissement.
 
+## Lien client (`/f/<jeton>`)
+
+À l'enregistrement, chaque document reçoit un **jeton de 128 bits tiré au
+hasard**. Le lien `ej-vtc.fr/f/<jeton>` ouvre la copie du client, rendue côté
+serveur par `api/document.js` — sans JavaScript, imprimable, lisible dans deux
+ans.
+
+Il n'y a **pas d'authentification** : le jeton est la clé. C'est pour ça qu'il
+ne doit dépendre d'aucune donnée de la course — un identifiant de ligne
+s'énumère en comptant, 2^128 possibilités non. Un jeton mal formé et un jeton
+inconnu reçoivent **la même réponse** : rien ne doit permettre de savoir qu'un
+document existe.
+
+La page est `no-store, private` et `noindex` : un document nominatif ne doit
+traîner ni dans un cache partagé ni dans un index. Chaque consultation est
+comptée (`consultations`, `vue_le`).
+
+Le chauffeur envoie le lien par WhatsApp depuis `/note` après impression, et
+peut le renvoyer depuis `/journal` — sans réémettre de document.
+
+L'identité de l'émetteur vit à deux endroits (la page pour l'aperçu, le serveur
+pour la copie client) : **un test compare les deux**.
+
 ## Tableau de bord
 
 `/admin` — même clé que le journal, même API. Quatre chiffres du trimestre

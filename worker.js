@@ -4,6 +4,7 @@
 //   /api/journal — journal des courses, protégé par jeton
 import fare from './api/fare.js';
 import journal from './api/journal.js';
+import document from './api/document.js';
 
 const ROUTES = { '/api/fare': fare };
 
@@ -101,6 +102,21 @@ export default {
       target.protocol = 'https:';
       target.port = '';
       return Response.redirect(target.toString(), 301);
+    }
+
+    // Copie client d'un document : /f/<jeton>. Volontairement publique, le
+    // jeton tient lieu de clé. Jamais de cache partagé sur une page nominative.
+    if (url.pathname.startsWith('/f/')) {
+      let response;
+      try {
+        response = await document(request, env);
+      } catch (err) {
+        console.error('[worker] document', err?.message);
+        response = new Response('Service momentanément indisponible', { status: 503 });
+      }
+      response = new Response(response.body, response);
+      for (const [name, value] of Object.entries(SECURITY_HEADERS)) response.headers.set(name, value);
+      return response;
     }
 
     // Le journal est un handler Worker natif : il ne passe pas par le shim

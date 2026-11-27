@@ -81,6 +81,10 @@
     .tag--facture { background: rgba(11,30,61,.12); color: var(--navy); }
     .tag--devis { background: rgba(11,30,61,.06); color: var(--muted); }
     .trip { color: var(--muted); font-size: .84rem; }
+    .renvoyer { display: inline-block; margin-top: 4px; font-size: .68rem; letter-spacing: .08em;
+                text-transform: uppercase; color: var(--gold-deep); text-decoration: none;
+                border-bottom: 1px solid currentColor; }
+    .renvoyer:hover { color: var(--navy); }
     .empty { padding: 50px 20px; text-align: center; color: var(--muted); }
     .hidden { display: none !important; }
 
@@ -164,6 +168,19 @@
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const frDate = (v) => (v ? v.split('-').reverse().join('/') : '');
 
+  // Renvoyer un document déjà émis : le client a perdu son lien, et il n'y a
+  // aucune raison d'émettre un second document pour la même course.
+  const TYPE_MOT = { NOTE: 'note', FACTURE: 'facture', DEVIS: 'devis' };
+  function lienWhatsApp(d) {
+    const texte = [
+      `Bonjour, voici votre ${TYPE_MOT[d.type] || 'document'} EJ-VTC n° ${d.numero}.`,
+      `${location.origin}/f/${d.jeton}`,
+      `Montant : ${euro.format(d.total_ttc)} TTC.`,
+    ].join('
+');
+    return `https://wa.me/${d.telephone_norm || ''}?text=${encodeURIComponent(texte)}`;
+  }
+
   const token = () => { try { return sessionStorage.getItem(KEY) || ''; } catch { return ''; } };
 
   async function api(path) {
@@ -201,7 +218,9 @@
     $('rows').innerHTML = documents.map((d) => `
       <tr>
         <td><span class="numero">${escapeHtml(d.numero)}</span><br>
-            <span class="tag tag--${d.type.toLowerCase()}">${escapeHtml(d.type)}</span></td>
+            <span class="tag tag--${d.type.toLowerCase()}">${escapeHtml(d.type)}</span>
+            ${d.jeton ? `<br><a class="renvoyer" target="_blank" rel="noopener"
+              href="${lienWhatsApp(d)}">Renvoyer</a>` : ''}</td>
         <td>${frDate(d.date_doc)}</td>
         <td>${escapeHtml(d.client) || '—'}${d.client_info ? `<br><span class="trip">${escapeHtml(d.client_info)}</span>` : ''}</td>
         <td><span class="trip">${escapeHtml(d.depart) || '—'}${d.arrivee ? ' → ' + escapeHtml(d.arrivee) : ''}${d.aller_retour ? ' (A/R)' : ''}</span></td>
