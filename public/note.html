@@ -1,0 +1,768 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Note / devis — EJ-VTC</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#0B1E3D">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..600&family=Inter:wght@400;500;600&display=swap">
+
+  <style>
+    :root {
+      --navy: #0B1E3D; --navy-soft: #16294a; --gold: #C8A24A; --gold-deep: #8a6f28;
+      --paper: #F7F4EC; --cream: #FBF9F4; --ink: #1A2233; --muted: #5A6376;
+      --line: rgba(11, 30, 61, .13);
+      --display: 'Fraunces', Georgia, serif;
+      --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      --shadow: 0 1px 2px rgba(11,30,61,.04), 0 12px 32px -12px rgba(11,30,61,.18);
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0; background: var(--paper); color: var(--ink);
+      font-family: var(--sans); line-height: 1.6; font-size: 15px;
+    }
+
+    /* ---------- Barre de marque ---------- */
+    .topbar { background: var(--navy); color: var(--paper); }
+    .topbar__in {
+      max-width: 1240px; margin: 0 auto; padding: 16px 20px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    .mark { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--gold); }
+    .mark b { font-weight: 600; letter-spacing: .18em; }
+    .mark i { display: block; width: 26px; height: 1px; background: currentColor; }
+    .mark span { letter-spacing: .3em; font-size: .82rem; color: var(--paper); }
+    .topnav { display: flex; gap: 8px; }
+    .topnav a {
+      color: var(--paper); text-decoration: none; font-size: .68rem; letter-spacing: .16em;
+      text-transform: uppercase; padding: 6px 12px; border: 1px solid rgba(255,255,255,.18); border-radius: 999px;
+    }
+    .topnav a[aria-current] { background: var(--gold); color: var(--navy); border-color: var(--gold); font-weight: 600; }
+
+    /* ---------- Mise en page ---------- */
+    .shell { max-width: 1240px; margin: 0 auto; padding: 28px 20px 140px; }
+    .intro { margin-bottom: 24px; }
+    .eyebrow {
+      display: flex; align-items: center; gap: 10px; margin: 0 0 8px;
+      font-size: .68rem; letter-spacing: .2em; text-transform: uppercase; color: var(--gold-deep);
+    }
+    .eyebrow::before { content: ""; width: 26px; height: 1px; background: var(--gold); }
+    h1 { font-family: var(--display); font-weight: 400; font-size: clamp(1.6rem, 4vw, 2.1rem); margin: 0 0 6px; color: var(--navy); }
+    h1 em { font-style: italic; color: var(--gold-deep); }
+    .intro p { margin: 0; color: var(--muted); max-width: 62ch; }
+
+    .notice {
+      display: flex; gap: 12px; align-items: flex-start;
+      background: #FFF6DF; border: 1px solid rgba(200,162,74,.4); border-left: 3px solid var(--gold);
+      padding: 13px 16px; border-radius: 3px; margin: 20px 0 26px; font-size: .88rem;
+    }
+    .notice svg { flex: 0 0 auto; width: 18px; height: 18px; margin-top: 2px; fill: var(--gold-deep); }
+
+    .layout { display: grid; gap: 26px; }
+    @media (min-width: 1040px) { .layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } }
+
+    /* ---------- Formulaire ---------- */
+    .card {
+      background: #fff; border: 1px solid var(--line); border-radius: 4px;
+      padding: 20px; margin-bottom: 18px; box-shadow: var(--shadow);
+    }
+    .card > h2 {
+      font-size: .68rem; letter-spacing: .2em; text-transform: uppercase; color: var(--gold-deep);
+      margin: 0 0 16px; font-weight: 600;
+    }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+    .field--wide { grid-column: 1 / -1; }
+    label { display: block; font-size: .74rem; color: var(--muted); margin-bottom: 6px; letter-spacing: .02em; }
+    input, select {
+      width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 3px;
+      font: inherit; font-size: .95rem; background: var(--cream); color: var(--ink);
+      transition: border-color .15s, background .15s;
+    }
+    input:hover, select:hover { border-color: rgba(11,30,61,.26); }
+    input:focus, select:focus { outline: none; border-color: var(--gold); background: #fff; box-shadow: 0 0 0 3px rgba(200,162,74,.18); }
+    input::placeholder { color: #A3AAB8; }
+    .hint { font-size: .72rem; color: var(--muted); margin: 6px 0 0; }
+
+    /* ---------- Raccourcis tarifaires ---------- */
+    .presets { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+    .chip {
+      border: 1px solid var(--line); background: var(--cream); color: var(--navy);
+      padding: 8px 13px; border-radius: 999px; cursor: pointer; font: inherit; font-size: .82rem;
+      transition: all .15s; white-space: nowrap;
+    }
+    .chip:hover { border-color: var(--gold); background: #fff; }
+    .chip[aria-pressed="true"] { background: var(--navy); border-color: var(--navy); color: var(--paper); }
+    .chip b { font-weight: 600; }
+    .chip span { opacity: .65; font-size: .76rem; }
+
+    .switch { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; font-size: .9rem; }
+    .switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .switch__track {
+      width: 42px; height: 24px; border-radius: 999px; background: #D7D3C9; position: relative; transition: background .2s;
+    }
+    .switch__track::after {
+      content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px;
+      border-radius: 50%; background: #fff; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    }
+    .switch input:checked + .switch__track { background: var(--gold); }
+    .switch input:checked + .switch__track::after { transform: translateX(18px); }
+    .switch input:focus-visible + .switch__track { box-shadow: 0 0 0 3px rgba(200,162,74,.35); }
+
+    /* ---------- Aperçu ---------- */
+    .preview { position: sticky; top: 24px; }
+    .preview__bar {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      margin-bottom: 10px; font-size: .68rem; letter-spacing: .2em; text-transform: uppercase; color: var(--muted);
+    }
+    .doc {
+      background: #fff; border: 1px solid var(--line); border-radius: 4px;
+      padding: 32px; box-shadow: var(--shadow);
+    }
+    .doc__head { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+    .doc__brand { font-size: 1.1rem; letter-spacing: .24em; text-transform: uppercase; color: var(--navy); font-weight: 600; }
+    .doc__issuer { font-size: .78rem; color: var(--muted); margin-top: 10px; line-height: 1.7; }
+    .doc__issuer span { display: block; }
+    .doc__issuer .issuer__name { color: var(--navy); font-weight: 600; font-size: .86rem; }
+
+    /* Bloc « Facturé à » : sur une facture, l'identité du client est obligatoire. */
+    .doc__client {
+      font-size: .88rem; margin: 22px 0 0; padding: 14px 16px;
+      background: var(--cream); border: 1px solid var(--line); border-radius: 3px;
+      max-width: 340px; line-height: 1.7;
+    }
+    .doc__client .client__label {
+      display: block; font-size: .62rem; letter-spacing: .18em; text-transform: uppercase;
+      color: var(--gold-deep); margin-bottom: 5px; font-weight: 600;
+    }
+    .doc__client strong { color: var(--navy); }
+    .doc__client em { font-style: normal; color: var(--muted); display: block; }
+
+    /* Devis : le client doit pouvoir le retourner signé. */
+    .doc__accord {
+      margin-top: 26px; padding: 14px 16px; border: 1px dashed var(--line); border-radius: 3px;
+      font-size: .78rem; color: var(--muted);
+    }
+    .doc__accord b { display: block; color: var(--navy); font-size: .84rem; margin-bottom: 4px; }
+    .doc__accord i { display: block; font-style: normal; margin-top: 26px; border-top: 1px solid var(--line); padding-top: 5px; max-width: 220px; }
+    .doc__meta { text-align: right; font-size: .82rem; color: var(--muted); }
+    .doc__meta strong {
+      display: block; font-family: var(--display); font-size: 1.2rem; font-weight: 500;
+      letter-spacing: .1em; color: var(--navy); margin-bottom: 2px;
+    }
+    .doc__title {
+      font-family: var(--display); font-weight: 400; font-size: 1.12rem; color: var(--navy);
+      margin: 26px 0 18px; padding-bottom: 10px; border-bottom: 2px solid var(--navy);
+    }
+    .doc__client { font-size: .9rem; margin: 0 0 18px; }
+    .doc__client span { color: var(--muted); }
+    table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+    th {
+      text-align: left; font-size: .64rem; letter-spacing: .14em; text-transform: uppercase;
+      color: var(--muted); border-bottom: 1px solid var(--line); padding: 0 0 9px; font-weight: 500;
+    }
+    td { padding: 13px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+    td.num, th.num { text-align: right; white-space: nowrap; padding-left: 12px; }
+    .line__title { font-weight: 600; color: var(--navy); }
+    .line__sub { color: var(--muted); font-size: .84rem; }
+    .totals { margin: 18px 0 0 auto; width: min(300px, 100%); font-size: .9rem; }
+    .totals div { display: flex; justify-content: space-between; gap: 16px; padding: 6px 0; }
+    .totals .ttc {
+      border-top: 2px solid var(--navy); margin-top: 8px; padding-top: 11px;
+      font-family: var(--display); font-size: 1.3rem; font-weight: 500; color: var(--navy);
+    }
+    .doc__foot {
+      margin-top: 26px; padding-top: 15px; border-top: 1px solid var(--line);
+      font-size: .74rem; color: var(--muted); white-space: pre-line; line-height: 1.8;
+    }
+    .todo { background: #FFF0C9; padding: 1px 6px; border-radius: 2px; color: #7a5f18; }
+
+    /* ---------- Actions ---------- */
+    .actions {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+      background: rgba(247,244,236,.94); backdrop-filter: blur(10px);
+      border-top: 1px solid var(--line); padding: 12px 20px;
+      display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border: 0; border-radius: 3px;
+      cursor: pointer; font: inherit; font-size: .76rem; letter-spacing: .14em; text-transform: uppercase;
+      text-decoration: none; transition: opacity .15s, transform .05s;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn:hover { opacity: .88; }
+    .btn--gold { background: var(--gold); color: var(--navy); font-weight: 600; }
+    .btn--line { background: #fff; color: var(--navy); border: 1px solid var(--navy); }
+    .btn--ghost { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+    .btn svg { width: 15px; height: 15px; fill: currentColor; }
+
+    @media (max-width: 1039px) {
+      .preview { position: static; }
+      .doc { padding: 22px; }
+    }
+
+    /* ---------- Impression ---------- */
+    @media print {
+      .topbar, .intro, .notice, .pane--form, .actions, .preview__bar { display: none !important; }
+      body { background: #fff; font-size: 11pt; }
+      .shell { max-width: none; padding: 0; }
+      .layout { display: block; }
+      .preview { position: static; }
+      .doc { border: 0; box-shadow: none; padding: 0; }
+      .todo { background: none; color: #000; border-bottom: 1px dotted #000; }
+      .doc__client { background: none; border-color: #999; }
+      /* Un document d'une page : rien ne doit se couper au milieu. */
+      table, .totals, .doc__client, .doc__accord, .doc__foot { break-inside: avoid; }
+      @page { margin: 16mm; }
+    }
+    /* ---------- Téléphone : aller au formulaire le plus vite possible ---------- */
+    @media (max-width: 600px) {
+      .shell { padding: 18px 14px 110px; }
+      .intro { margin-bottom: 16px; }
+      h1 { font-size: 1.35rem; line-height: 1.25; }
+      .intro p { font-size: .88rem; }
+      .notice { font-size: .82rem; padding: 11px 13px; margin: 14px 0 18px; }
+      .card { padding: 16px 14px; }
+      .chip { padding: 9px 12px; }
+      .actions { padding: 10px 12px; gap: 8px; flex-wrap: nowrap; }
+      .btn { padding: 12px 10px; font-size: .68rem; letter-spacing: .08em; flex: 1 1 auto; justify-content: center; }
+      .btn--ghost { flex: 0 0 auto; }
+    }
+
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar__in">
+    <a class="mark" href="/" aria-label="EJ-VTC, retour à l'accueil"><b>EJ</b><i></i><span>VTC</span></a>
+    <nav class="topnav">
+      <a href="/note" aria-current="page">Nouvelle note</a>
+      <a href="/journal">Journal</a>
+      <a href="/admin">Tableau de bord</a>
+    </nav>
+  </div>
+</header>
+
+<div class="shell">
+  <div class="intro">
+    <p class="eyebrow">Facturation</p>
+    <h1>Note et devis, <em>en deux minutes.</em></h1>
+    <p>Choisissez la prestation, complétez la course, puis <strong>Imprimer</strong> → <em>Enregistrer en PDF</em>. Le document se met à jour pendant que vous tapez.</p>
+  </div>
+
+  <div class="notice">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 1 21h22L12 2Zm0 5 7.5 13h-15L12 7Zm-1 4v4h2v-4h-2Zm0 5v2h2v-2h-2Z"/></svg>
+    <div>
+      <strong>Obligation :</strong> la note doit être remise au client <strong>avant le paiement</strong> dès
+      25 € TTC, et en dessous de 25 € <strong>si le client la demande</strong> (arrêté du 3 octobre 1983).
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- ============ FORMULAIRE ============ -->
+    <div class="pane pane--form">
+      <form id="form" autocomplete="off">
+
+        <section class="card">
+          <h2>Prestation</h2>
+          <div class="presets" id="presets" role="group" aria-label="Tarifs courants"></div>
+
+          <div class="grid" style="margin-top:16px">
+            <div>
+              <label for="prestation">Type et TVA</label>
+              <select id="prestation">
+                <option value="transfert|10">Transfert local — TVA 10 %</option>
+                <option value="forfait|10">Forfait aéroport / gare — TVA 10 %</option>
+                <option value="circuit|10">Circuit touristique — TVA 10 %</option>
+                <option value="miseadispo|20">Mise à disposition — TVA 20 %</option>
+              </select>
+            </div>
+            <div id="kmField" hidden>
+              <label for="km">Distance (km)</label>
+              <input id="km" type="number" min="0" step="0.1" placeholder="29.2">
+              <p class="hint">1,80 € HT/km · minimum 9,50 € HT</p>
+            </div>
+            <div>
+              <label for="prixHT">Prix HT (€)</label>
+              <input id="prixHT" type="number" min="0" step="0.01" placeholder="45.00">
+            </div>
+            <div class="field--wide">
+              <label for="detail">Détail affiché sur le document</label>
+              <input id="detail" type="text" placeholder="Forfait Le Havre → Aéroport Deauville">
+            </div>
+            <div class="field--wide">
+              <label class="switch" for="allerRetour">
+                <input type="checkbox" id="allerRetour">
+                <span class="switch__track" aria-hidden="true"></span>
+                <span>Aller-retour <span style="color:var(--muted)">— double le montant</span></span>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Course</h2>
+          <div class="grid">
+            <div class="field--wide">
+              <label for="depart">Lieu de prise en charge</label>
+              <input id="depart" type="text" placeholder="Gare du Havre">
+            </div>
+            <div class="field--wide">
+              <label for="arrivee">Destination</label>
+              <input id="arrivee" type="text" placeholder="Aéroport de Deauville">
+            </div>
+            <div>
+              <label for="dateCourse">Date</label>
+              <input id="dateCourse" type="date">
+            </div>
+            <div>
+              <label for="heure">Heure</label>
+              <input id="heure" type="time">
+            </div>
+            <div>
+              <label for="passagers">Passagers</label>
+              <input id="passagers" type="number" min="1" max="8" value="1">
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Client et paiement</h2>
+          <div class="grid">
+            <div>
+              <label for="client">Nom du client</label>
+              <input id="client" type="text" placeholder="M. Dupont">
+            </div>
+            <div>
+              <label for="clientInfo">Société et adresse <span style="opacity:.6" id="clientInfoHint">(facultatif)</span></label>
+              <input id="clientInfo" type="text" placeholder="SARL Exemple, 1 rue X, 76600 Le Havre">
+            </div>
+            <div>
+              <label for="paiement">Règlement</label>
+              <select id="paiement">
+                <option>Carte bancaire</option>
+                <option>Espèces</option>
+                <option>À régler</option>
+              </select>
+            </div>
+            <div>
+              <label for="supplementHT">Supplément HT (€)</label>
+              <input id="supplementHT" type="number" min="0" step="0.01" placeholder="0.00">
+            </div>
+            <div class="field--wide">
+              <label for="supplementLabel">Libellé du supplément</label>
+              <input id="supplementLabel" type="text" placeholder="Frais de prise en charge, attente, bagages…">
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Document</h2>
+          <div class="grid">
+            <div>
+              <label for="type">Type</label>
+              <select id="type">
+                <option value="NOTE">Note — client particulier</option>
+                <option value="FACTURE">Facture — client professionnel</option>
+                <option value="DEVIS">Devis — avant la course</option>
+              </select>
+            </div>
+            <div>
+              <label for="numero">Numéro</label>
+              <input id="numero" type="text" placeholder="2026-0001">
+              <p class="hint">Suite continue, incrémentée à chaque impression.</p>
+            </div>
+            <div>
+              <label for="dateDoc">Date du document</label>
+              <input id="dateDoc" type="date">
+            </div>
+            <div id="echeanceField" hidden>
+              <label for="echeance">Échéance de règlement</label>
+              <input id="echeance" type="date">
+              <p class="hint">Obligatoire sur une facture professionnelle.</p>
+            </div>
+          </div>
+        </section>
+      </form>
+    </div>
+
+    <!-- ============ APERÇU ============ -->
+    <div class="pane preview">
+      <div class="preview__bar no-print">
+        <span>Aperçu du document</span>
+        <span id="liveTotal"></span>
+      </div>
+
+      <article class="doc" id="doc">
+        <div class="doc__head">
+          <div>
+            <div class="doc__brand">EJ&#8201;—&#8201;VTC</div>
+            <div class="doc__issuer" id="issuer"></div>
+          </div>
+          <div class="doc__meta">
+            <strong id="docType">NOTE</strong>
+            <span id="docNum"></span><br>
+            <span id="docDate"></span>
+          </div>
+        </div>
+
+        <h2 class="doc__title" id="docTitle">Note — transport de personnes avec chauffeur</h2>
+        <p class="doc__client" id="docClient"></p>
+
+        <table>
+          <thead>
+            <tr><th>Prestation</th><th class="num">TVA</th><th class="num">Montant HT</th></tr>
+          </thead>
+          <tbody id="lines"></tbody>
+        </table>
+
+        <div class="totals">
+          <div><span>Total HT</span><span id="tHT"></span></div>
+          <div><span id="tTvaLabel">TVA</span><span id="tTVA"></span></div>
+          <div class="ttc"><span>Total TTC</span><span id="tTTC"></span></div>
+        </div>
+
+        <div class="doc__accord" id="accord" hidden>
+          <b>Bon pour accord</b>
+          Date, nom et signature du client :
+          <i></i>
+        </div>
+
+        <div class="doc__foot" id="foot"></div>
+      </article>
+    </div>
+  </div>
+</div>
+
+<div class="actions no-print">
+  <button class="btn btn--gold" type="button" id="print">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 8h-1V3H6v5H5a3 3 0 0 0-3 3v6h4v3h12v-3h4v-6a3 3 0 0 0-3-3ZM8 5h8v3H8V5Zm8 14H8v-4h8v4Zm3-7a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/></svg>
+    Imprimer / PDF
+  </button>
+  <a class="btn btn--line" id="wa" href="#" target="_blank" rel="noopener">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15l-1.3 4.8 5-1.3A10 10 0 1 0 12 2Zm5.3 14.2c-.2.6-1.3 1.2-1.8 1.2-.5 0-.9.2-3-.7a11.6 11.6 0 0 1-4.5-4c-.3-.5-1.1-1.5-1.1-2.8s.7-2 .9-2.2a1 1 0 0 1 .7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .6l-.4.5c-.1.2-.3.3-.1.6a9 9 0 0 0 1.5 1.8c.6.6 1.2.8 1.4.9.2.1.4.1.5-.1l.7-.8c.2-.2.3-.2.6-.1l2 1c.3.1.4.2.5.3 0 .2 0 .9-.2 1.5Z"/></svg>
+    WhatsApp
+  </a>
+  <button class="btn btn--ghost" type="button" id="reset">Nouveau</button>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ------------------------------------------------------------------
+     IDENTITÉ DE L'ENTREPRISE — à remplir une seule fois.
+     Une note doit identifier l'entreprise : sans ces informations,
+     le document n'est pas conforme et le signale.
+     ------------------------------------------------------------------ */
+  const ENTREPRISE = {
+    raisonSociale: 'EJ-VTC',
+    // Entreprise individuelle : la dénomination légale est le nom de l'exploitant.
+    // Il doit figurer sur la note, le nom commercial seul ne suffit pas.
+    exploitant: 'Ezeddine JABRI',
+    formeJuridique: 'Entrepreneur individuel',
+    adresse: '32 rue de Reims, 76620 Le Havre',
+    siret: '890 613 565 00021',
+    tva: 'FR54890613565',     // assujetti : TVA 10 % sur le transport de personnes
+    evtc: '',                 // numéro au registre VTC (macaron rouge du véhicule)
+    telephone: '+33 6 52 80 74 88',
+    email: 'contact@ej-vtc.fr',
+    site: 'ej-vtc.fr',
+  };
+
+  /* Tarifs officiels — identiques à api/_lib/pricing.js */
+  const RATE_PER_KM = 1.8, MIN_FARE = 9.5;
+  const PRESETS = [
+    { id: 'orly',       label: 'Orly',        price: 376, kind: 'forfait|10',   detail: 'Forfait, kilométrage inclus' },
+    { id: 'cdg',        label: 'Roissy CDG',  price: 410, kind: 'forfait|10',   detail: 'Forfait, kilométrage inclus' },
+    { id: 'caen',       label: 'Caen',        price: 120, kind: 'forfait|10',   detail: 'Forfait, kilométrage inclus' },
+    { id: 'deauville',  label: 'Deauville',   price: 45,  kind: 'forfait|10',   detail: 'Forfait, kilométrage inclus' },
+    { id: 'local',      label: 'Local',       price: null, kind: 'transfert|10', detail: '' },
+    { id: '1h',         label: '1 h',         price: 60,  kind: 'miseadispo|20', detail: 'Mise à disposition 1 heure, 20 km inclus' },
+    { id: '4h',         label: '4 h',         price: 300, kind: 'miseadispo|20', detail: 'Mise à disposition 4 heures, 70 km inclus' },
+    { id: '8h',         label: '8 h',         price: 580, kind: 'miseadispo|20', detail: 'Mise à disposition 8 heures, 200 km inclus' },
+    { id: 'msm',        label: 'Mont St-Michel', price: 620, kind: 'circuit|10', detail: 'Circuit Mont Saint-Michel, environ 8 h, kilométrage inclus' },
+  ];
+
+  const WA_NUMBER = '33652807488';
+  const euro = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });
+  const $ = (id) => document.getElementById(id);
+  const todo = (label) => `<span class="todo">[${label} à renseigner]</span>`;
+  const round2 = (n) => Math.round(n * 100) / 100;
+
+  /* ---------- Numérotation : suite continue, mémorisée localement ---------- */
+  function nextNumero() {
+    const year = new Date().getFullYear();
+    let seq = 1;
+    try {
+      const saved = JSON.parse(localStorage.getItem('ejvtc.numero') || 'null');
+      if (saved && saved.year === year) seq = saved.seq + 1;
+    } catch { /* stockage indisponible : on repart à 1 */ }
+    return `${year}-${String(seq).padStart(4, '0')}`;
+  }
+  function commitNumero(numero) {
+    const m = /^(\d{4})-(\d+)$/.exec(numero);
+    if (!m) return;
+    try { localStorage.setItem('ejvtc.numero', JSON.stringify({ year: +m[1], seq: +m[2] })); } catch { /* ignore */ }
+  }
+
+  const frDate = (value) => {
+    if (!value) return '';
+    const [y, m, d] = value.split('-');
+    return `${d}/${m}/${y}`;
+  };
+  const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  /* ---------- Raccourcis ---------- */
+  function buildPresets() {
+    $('presets').innerHTML = PRESETS.map((p) => `
+      <button class="chip" type="button" data-preset="${p.id}" aria-pressed="false">
+        <b>${escapeHtml(p.label)}</b>${p.price ? ` <span>${p.price} € HT</span>` : ' <span>au km</span>'}
+      </button>`).join('');
+
+    $('presets').addEventListener('click', (e) => {
+      const button = e.target.closest('[data-preset]');
+      if (!button) return;
+      const preset = PRESETS.find((p) => p.id === button.dataset.preset);
+      for (const chip of $('presets').children) chip.setAttribute('aria-pressed', String(chip === button));
+
+      $('prestation').value = preset.kind;
+      $('detail').value = preset.detail;
+      if (preset.price === null) {
+        $('prixHT').value = '';
+        $('km').focus();
+      } else {
+        $('km').value = '';
+        $('prixHT').value = preset.price.toFixed(2);
+      }
+      render();
+    });
+  }
+
+  function issuerBlock() {
+    const lines = [];
+    // Entreprise individuelle : c'est le nom de l'exploitant qui identifie le
+    // redevable. Le nom commercial seul ne suffit pas sur un document comptable.
+    lines.push(`<span class="issuer__name">${ENTREPRISE.exploitant || todo('Exploitant')}</span>`);
+    const forme = [
+      ENTREPRISE.formeJuridique,
+      ENTREPRISE.raisonSociale ? `nom commercial ${ENTREPRISE.raisonSociale}` : '',
+    ].filter(Boolean).join(' — ');
+    if (forme) lines.push(`<span>${forme}</span>`);
+    lines.push(`<span>${ENTREPRISE.adresse || todo('Adresse')}</span>`);
+    lines.push(`<span>SIRET ${ENTREPRISE.siret || todo('SIRET')}</span>`);
+    if (ENTREPRISE.tva) lines.push(`<span>TVA ${ENTREPRISE.tva}</span>`);
+    lines.push(ENTREPRISE.evtc
+      ? `<span>N° EVTC ${ENTREPRISE.evtc}</span>`
+      : `<span>${todo('N° EVTC')}</span>`);
+    lines.push(`<span>${ENTREPRISE.telephone} · ${ENTREPRISE.email}</span>`);
+    return lines.join('');
+  }
+
+  // Trois documents, trois régimes : la note pour un particulier, la facture
+  // pour un client professionnel (mentions de règlement obligatoires), le devis
+  // avant la course.
+  const DOCUMENTS = {
+    NOTE:    { titre: 'Note',    pour: 'Client' },
+    FACTURE: { titre: 'Facture', pour: 'Facturé à' },
+    DEVIS:   { titre: 'Devis',   pour: 'Devis établi pour' },
+  };
+  const SOUS_TITRE = 'transport de personnes avec chauffeur';
+
+  function render() {
+    const docType = DOCUMENTS[$('type').value] ? $('type').value : 'NOTE';
+    const isDevis = docType === 'DEVIS';
+    const isFacture = docType === 'FACTURE';
+    const [kind, vatRate] = $('prestation').value.split('|');
+    const tva = Number(vatRate);
+
+    // Transfert local : le prix se calcule au kilomètre.
+    const isLocal = kind === 'transfert';
+    $('kmField').hidden = !isLocal;
+    const km = Number($('km').value) || 0;
+    if (isLocal && km > 0) {
+      $('prixHT').value = Math.max(round2(km * RATE_PER_KM), MIN_FARE).toFixed(2);
+      if (!$('detail').value || /km ×/.test($('detail').value)) {
+        $('detail').value = `${km.toLocaleString('fr-FR')} km × ${euro.format(RATE_PER_KM)} HT`;
+      }
+    }
+
+    const factor = $('allerRetour').checked ? 2 : 1;
+    const prix = round2((Number($('prixHT').value) || 0) * factor);
+    const supp = Number($('supplementHT').value) || 0;
+    const totalHT = round2(prix + supp);
+    const montantTVA = round2(totalHT * tva / 100);
+    const totalTTC = round2(totalHT + montantTVA);
+
+    $('issuer').innerHTML = issuerBlock();   // uniquement des constantes internes
+    $('docType').textContent = docType;
+    $('docNum').textContent = $('numero').value ? `n° ${$('numero').value}` : '';
+    $('docDate').textContent = frDate($('dateDoc').value);
+    $('docTitle').textContent = `${DOCUMENTS[docType].titre} — ${SOUS_TITRE}`;
+    $('echeanceField').hidden = !isFacture;
+    $('accord').hidden = !isDevis;
+    $('clientInfoHint').textContent = isFacture ? '(obligatoire)' : '(facultatif)';
+
+    // Sur une facture, l'adresse du client est une mention obligatoire : on la
+    // réclame visiblement plutôt que d'émettre un document irrégulier.
+    const client = $('client').value.trim();
+    const clientInfo = $('clientInfo').value.trim();
+    const clientLines = [
+      client ? `<strong>${escapeHtml(client)}</strong>` : todo('Nom du client'),
+      clientInfo ? `<em>${escapeHtml(clientInfo)}</em>`
+        : (isFacture ? `<em>${todo('Adresse du client')}</em>` : ''),
+    ].filter(Boolean);
+    $('docClient').innerHTML =
+      `<span class="client__label">${DOCUMENTS[docType].pour}</span>${clientLines.join('')}`;
+
+    const when = [
+      $('dateCourse').value ? `Le ${frDate($('dateCourse').value)}` : '',
+      $('heure').value ? `à ${$('heure').value}` : '',
+    ].filter(Boolean).join(' ');
+    const trajet = [$('depart').value.trim(), $('arrivee').value.trim()].filter(Boolean).join(' → ');
+    const pax = Number($('passagers').value) || 1;
+    const label = $('prestation').selectedOptions[0].textContent.split('—')[0].trim();
+
+    const sub = [
+      trajet, when,
+      `${pax} passager${pax > 1 ? 's' : ''}`,
+      $('detail').value.trim(),
+      factor === 2 ? 'Aller-retour (×2)' : '',
+    ].filter(Boolean).map(escapeHtml).join('<br>');
+
+    let rows = `<tr>
+      <td><span class="line__title">${escapeHtml(label)}</span><br><span class="line__sub">${sub}</span></td>
+      <td class="num">${tva} %</td><td class="num">${euro.format(prix)}</td></tr>`;
+    if (supp > 0) {
+      rows += `<tr><td>${escapeHtml($('supplementLabel').value.trim() || 'Supplément')}</td>
+        <td class="num">${tva} %</td><td class="num">${euro.format(supp)}</td></tr>`;
+    }
+    $('lines').innerHTML = rows;
+
+    $('tHT').textContent = euro.format(totalHT);
+    $('tTvaLabel').textContent = `TVA ${tva} %`;
+    $('tTVA').textContent = euro.format(montantTVA);
+    $('tTTC').textContent = euro.format(totalTTC);
+    $('liveTotal').textContent = `${euro.format(totalTTC)} TTC`;
+
+    const foot = [];
+    const paiement = $('paiement').value;
+    if (isDevis) {
+      foot.push('Devis gratuit, valable 30 jours à compter de la date ci-dessus.');
+      foot.push('Prix ferme pour le trajet décrit. Toute modification du trajet fera l’objet d’un nouveau devis.');
+    } else if (isFacture) {
+      // Mentions imposées par l'article L441-9 du code de commerce sur une
+      // facture entre professionnels : sans elles, la facture est irrégulière.
+      foot.push(paiement === 'À régler'
+        ? `Règlement à réception. Échéance : ${$('echeance').value ? frDate($('echeance').value) : todo('échéance')}.`
+        : `Réglée par ${paiement.toLowerCase()} le ${frDate($('dateDoc').value)}.`);
+      foot.push('Escompte pour paiement anticipé : néant.');
+      foot.push('Retard de paiement : intérêts au taux de refinancement de la BCE majoré de 10 points, '
+        + 'et indemnité forfaitaire de 40 € pour frais de recouvrement '
+        + '(art. L441-10 et D441-5 du code de commerce).');
+    } else {
+      foot.push(`Payé par ${paiement.toLowerCase()}.`);
+      foot.push('Note remise au client conformément à l’arrêté du 3 octobre 1983.');
+    }
+    const manquants = [];
+    if (!ENTREPRISE.siret) manquants.push('SIRET');
+    if (!ENTREPRISE.evtc) manquants.push('numéro EVTC');
+    if (manquants.length) foot.push(`⚠ Document incomplet : ${manquants.join(' et ')} manquant${manquants.length > 1 ? 's' : ''}.`);
+    foot.push(`${ENTREPRISE.site} · ${ENTREPRISE.telephone}`);
+    $('foot').innerHTML = foot.join('<br>');   // uniquement des constantes internes
+
+    const resume = [
+      `${DOCUMENTS[docType].titre} EJ-VTC${$('numero').value ? ' n° ' + $('numero').value : ''}`,
+      trajet, when,
+      `Total : ${euro.format(totalTTC)} TTC (dont TVA ${tva} % : ${euro.format(montantTVA)})`,
+    ].filter(Boolean).join('\n');
+    $('wa').href = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(resume)}`;
+  }
+
+  function init() {
+    const today = new Date().toISOString().slice(0, 10);
+    $('dateDoc').value = today;
+    $('dateCourse').value = today;
+    $('numero').value = nextNumero();
+    render();
+  }
+
+  $('form').addEventListener('input', render);
+  $('form').addEventListener('change', render);
+  /* ---------- Enregistrement au journal ---------- */
+  const TOKEN_KEY = 'ejvtc.journalToken';
+  const journalToken = () => { try { return sessionStorage.getItem(TOKEN_KEY) || ''; } catch { return ''; } };
+
+  async function saveToJournal() {
+    const token = journalToken();
+    if (!token) return null;            // pas de clé sur cet appareil : on imprime quand même
+    const [kind, vat] = $('prestation').value.split('|');
+    const res = await fetch('/api/journal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        type: $('type').value,
+        dateDoc: $('dateDoc').value,
+        dateCourse: $('dateCourse').value,
+        heure: $('heure').value,
+        client: $('client').value,
+        clientInfo: $('clientInfo').value,
+        depart: $('depart').value,
+        arrivee: $('arrivee').value,
+        passagers: $('passagers').value,
+        prestation: kind,
+        detail: $('detail').value,
+        allerRetour: $('allerRetour').checked,
+        km: $('km').value || null,
+        prixHt: (Number($('prixHT').value) || 0) * ($('allerRetour').checked ? 2 : 1),
+        supplementHt: $('supplementHT').value,
+        supplementLabel: $('supplementLabel').value,
+        tauxTva: Number(vat),
+        paiement: $('paiement').value,
+      }),
+    });
+    if (!res.ok) throw new Error(res.status === 401 ? 'unauthorized' : 'server');
+    return res.json();
+  }
+
+  $('print').addEventListener('click', async () => {
+    const button = $('print');
+    button.disabled = true;
+    try {
+      const saved = await saveToJournal();
+      if (saved) {
+        // Le numéro vient du serveur : la suite reste continue même si on
+        // change de téléphone ou qu'on vide le cache.
+        $('numero').value = saved.numero;
+        render();
+      }
+    } catch (err) {
+      const message = err.message === 'unauthorized'
+        ? 'Clé du journal refusée : le document n’a pas été enregistré. Imprimer quand même ?'
+        : 'Journal indisponible : le document n’a pas été enregistré. Imprimer quand même ?';
+      if (!confirm(message)) { button.disabled = false; return; }
+    }
+    commitNumero($('numero').value);
+    button.disabled = false;
+    window.print();
+  });
+  $('reset').addEventListener('click', () => {
+    $('form').reset();
+    for (const chip of $('presets').children) chip.setAttribute('aria-pressed', 'false');
+    init();
+  });
+
+  buildPresets();
+  init();
+})();
+</script>
+</body>
+</html>

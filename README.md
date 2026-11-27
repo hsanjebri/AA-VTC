@@ -93,9 +93,82 @@ Variable optionnelle `OVH_REMOTE_DIR` (défaut `/www`) pour le dossier distant.
 À activer dans le tableau de bord Cloudflare (gratuit, non scriptable) : **Bot Fight Mode**
 (Security → Bots) et **Always Use HTTPS** (SSL/TLS → Edge Certificates), mode SSL **Full (strict)**.
 
+## Journal des courses (outil interne)
+
+| Page | Rôle |
+|---|---|
+| `/note` | Émettre une note ou un devis, imprimer en PDF |
+| `/journal` | Historique, totaux du mois, export CSV |
+
+Les deux pages sont en `noindex`, exclues de `robots.txt` et jamais liées depuis
+le site public. L'API `/api/journal` exige un jeton (`JOURNAL_TOKEN`, secret
+Cloudflare) : **aucun mot de passe n'est stocké dans le dépôt**.
+
+**La numérotation est attribuée par le serveur**, pas par le navigateur : une
+suite continue sans trou est une obligation, et un compteur gardé dans le
+téléphone disparaît au premier vidage de cache. Un index unique
+`(annee, sequence)` empêche deux documents de porter le même numéro ; en cas de
+collision, l'enregistrement retente avec le numéro suivant.
+
+Si le journal est indisponible, l'impression reste possible après confirmation :
+une panne ne doit jamais empêcher de remettre sa note au client.
+
+```bash
+npx wrangler d1 execute ej-vtc-journal --remote --file=./migrations/0001_journal.sql
+npx wrangler secret put JOURNAL_TOKEN
+```
+
 ## Tarifs (`api/_lib/pricing.js`)
 
 Prix HT. Transfert local : 1,80 €/km, minimum 9,50 €, **TVA 10 %**.
 Mise à disposition : 1 h/60 €, 4 h/300 €, 8 h/580 € — **TVA 20 %**, km supplémentaire 0,90 € (TVA 10 %).
 Forfaits aéroports au départ du Havre (Orly 376, Roissy 410, Caen 120, Deauville 45) et circuits :
 kilométrage inclus, **TVA 10 %**. L'estimateur propose automatiquement le forfait quand il s'applique.
+
+## Identité de l'exploitant
+
+Elle vit à un seul endroit, la constante `ENTREPRISE` en tête du script de
+`public/note.html`, parce que son seul usage est d'identifier l'émetteur sur les
+notes, factures et devis remis aux clients.
+
+| | |
+|---|---|
+| Exploitant | Ezeddine JABRI — nom commercial EJ-VTC |
+| Forme juridique | Entrepreneur individuel |
+| Adresse | 32 rue de Reims, 76620 Le Havre |
+| SIRET | 890 613 565 00021 |
+| TVA | FR54890613565 (assujetti, 10 % sur le transport de personnes) |
+| N° EVTC | **manquant** — le document le signale tant qu'il n'est pas saisi |
+
+### Trois documents
+
+| | Pour qui | Mentions particulières |
+|---|---|---|
+| **Note** | Particulier | Arrêté du 3 octobre 1983 : remise avant paiement dès 25 € TTC |
+| **Facture** | Client professionnel | Échéance, escompte, pénalités de retard et indemnité de 40 € (art. L441-9 et L441-10 du code de commerce) ; adresse du client exigée |
+| **Devis** | Avant la course | Gratuit, valable 30 jours, zone « Bon pour accord » à signer |
+
+Note et facture entrent dans le chiffre d'affaires du journal, le devis non :
+un devis n'est pas un encaissement.
+
+## Tableau de bord
+
+`/admin` — même clé que le journal, même API. Quatre chiffres du trimestre
+(dont la **TVA collectée**, le montant à reverser), le chiffre d'affaires HT des
+douze derniers mois, les destinations les plus courantes et la répartition des
+documents.
+
+Les agrégats sont calculés en SQL et envoyés en un seul `batch()` : le plan
+gratuit accorde 10 ms de processeur par requête, ce qui interdit d'additionner
+les lignes en JavaScript. Un mois sans course apparaît à zéro, reconstruit
+côté navigateur — sans quoi l'axe se resserre et la série ment.
+
+Les graphiques n'utilisent aucune bibliothèque. La palette (`--series-1` à
+`--series-3`) est dérivée de la charte et validée pour le daltonisme : écart
+le plus faible ΔE 9,7 en vision des couleurs déficiente, 17,1 en vision
+normale. L'or passant sous 3:1 sur fond blanc, chaque graphique porte une
+légende écrite et une vue tableau.
+
+`public/404.html` répond aux adresses inconnues (`not_found_handling: 404-page`
+dans `wrangler.jsonc`) et `.well-known/security.txt` donne un point de contact
+normalisé (RFC 9116) pour signaler une faille.

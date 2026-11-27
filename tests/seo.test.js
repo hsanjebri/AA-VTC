@@ -198,3 +198,188 @@ describe('Static pages and PWA files', () => {
     assert.ok(new Date(expires[1]) > new Date(), 'security.txt has expired');
   });
 });
+
+describe('Internal note / quote tool', () => {
+  const note = readFileSync(join(PUBLIC, 'note.html'), 'utf8');
+
+  test('the page exists and stays out of search engines', () => {
+    assert.match(note, /content="noindex/, 'an internal tool must not be indexed');
+    assert.ok(robots.includes('Disallow: /note'), 'robots.txt must exclude /note');
+    assert.ok(!sitemap.includes('/note'), 'the tool must not be in the sitemap');
+  });
+
+  test('it is not linked from the public page', () => {
+    assert.ok(!html.includes('note.html') && !html.includes('href="/note"'),
+      'the tool is for the driver, not for visitors');
+  });
+
+  test('the legal VAT rates are offered', () => {
+    for (const rate of ['10', '20']) {
+      assert.ok(note.includes(`|${rate}"`), `VAT ${rate} % missing from the prestation list`);
+    }
+  });
+
+  test('a document carries the mentions a note requires', () => {
+    for (const field of ['siret', 'evtc', 'raisonSociale', 'adresse']) {
+      assert.ok(note.includes(field), `${field} missing from the issuer block`);
+    }
+    assert.ok(note.includes('3 octobre 1983'), 'the legal basis should be cited on the note');
+  });
+
+  test('missing identifiers are flagged rather than silently omitted', () => {
+    assert.ok(note.includes('Document incomplet'),
+      'the page must warn when SIRET/EVTC are not filled in');
+  });
+});
+
+// Une note sans SIRET ni identité de l'exploitant n'est pas un justificatif
+// valable : ces champs doivent rester renseignés dans l'outil interne.
+describe("Identité de l'entreprise sur les documents", () => {
+  const note = readFileSync(join(PUBLIC, 'note.html'), 'utf8');
+
+  test('the note carries the SIRET, the VAT number and the operator name', () => {
+    assert.match(note, /siret: '890 613 565 00021'/);
+    assert.match(note, /tva: 'FR54890613565'/);
+    assert.match(note, /exploitant: 'Ezeddine JABRI'/);
+    assert.ok(note.includes('ENTREPRISE.exploitant'), 'the operator name is never printed');
+  });
+
+  test('a missing EVTC number is still flagged on the document', () => {
+    assert.ok(note.includes("manquants.push('numéro EVTC')"), 'a missing EVTC number goes unnoticed');
+    assert.ok(note.includes('Document incomplet'), 'no warning when a mandatory field is missing');
+  });
+
+  // Une facture entre professionnels sans ces mentions est irrégulière
+  // (art. L441-9 du code de commerce).
+  test('the tool can issue an invoice, not only a receipt', () => {
+    assert.match(note, /<option value="FACTURE"/, 'no invoice type in the form');
+    assert.ok(note.includes("FACTURE:"), 'FACTURE is not described among the document types');
+  });
+
+  test('an invoice carries the mandatory payment terms', () => {
+    assert.ok(note.includes('Échéance'), 'no due date on the invoice');
+    assert.ok(note.includes('Escompte pour paiement anticipé'), 'the discount term is missing');
+    assert.ok(note.includes('40 € pour frais de recouvrement'), 'the flat recovery fee is missing');
+    assert.ok(note.includes('L441-10'), 'the late-payment interest basis is missing');
+  });
+
+  test('an invoice demands the client address, a quote offers a signature box', () => {
+    assert.ok(note.includes("todo('Adresse du client')"), 'an invoice can be issued without the client address');
+    assert.ok(note.includes('Bon pour accord'), 'a quote cannot be returned signed');
+    assert.ok(note.includes("$('accord').hidden = !isDevis"), 'the signature box is not reserved for quotes');
+  });
+});
+
+// Le tableau de bord lit les mêmes données que le journal : il doit être
+// aussi fermé que lui, et ses agrégats doivent exclure les devis.
+describe('Tableau de bord', () => {
+  const admin = readFileSync(join(PUBLIC, 'admin.html'), 'utf8');
+  const api = readFileSync(join(process.cwd(), 'api', 'journal.js'), 'utf8');
+
+  test('the dashboard stays private', () => {
+    assert.match(admin, /content="noindex/);
+    assert.ok(robots.includes('Disallow: /admin'));
+    assert.ok(!sitemap.includes('/admin'));
+    assert.ok(!html.includes('/admin'), 'never linked from the public page');
+  });
+
+  test('the dashboard goes through the same token as the journal', () => {
+    assert.ok(admin.includes("'ejvtc.journalToken'"), 'it must reuse the journal key');
+    assert.ok(admin.includes('Authorization'), 'the API call must carry the token');
+    assert.ok(!/JOURNAL_TOKEN|Bearer [A-Za-z0-9]{8}/.test(admin), 'no key may be committed');
+  });
+
+  test('money figures never count quotes', () => {
+    assert.ok(api.includes("ENCAISSE = \"type IN ('NOTE', 'FACTURE')\""),
+      'the aggregates must filter on paid documents only');
+    const stats = api.slice(api.indexOf('async function stats'), api.indexOf('/** Export CSV'));
+    for (const query of ['total_ht', 'destinations', 'paiement']) {
+      assert.ok(stats.includes(query), `the stats query lost ${query}`);
+    }
+    // Chaque requête qui additionne de l'argent porte le filtre ; seule celle
+    // qui compte les documents par type s'en passe, et elle ne somme rien.
+    const sommes = stats.split('env.JOURNAL.prepare').filter((q) => q.includes('SUM('));
+    assert.ok(sommes.length >= 4, 'unexpectedly few aggregate queries');
+    for (const q of sommes) {
+      assert.ok(q.includes('${ENCAISSE}'), 'an aggregate query is missing the paid-only filter');
+    }
+  });
+
+  test('every aggregate is computed in SQL, in one round trip', () => {
+    // 10 ms de processeur par requête sur le plan gratuit : additionner les
+    // lignes en JavaScript ne passerait pas à l'échelle.
+    assert.ok(api.includes('JOURNAL.batch('), 'the six queries must travel together');
+    assert.ok(api.includes('COALESCE(SUM(total_ht), 0)'), 'an empty quarter must read 0, not null');
+  });
+
+  test('a month without a course still appears on the axis', () => {
+    assert.ok(admin.includes('function douzeMois'), 'the time axis must be built client-side');
+    assert.ok(admin.includes('|| { mois, courses: 0'), 'a missing month must fall back to zero');
+  });
+
+  test('colour is never the only carrier of meaning', () => {
+    assert.ok(admin.includes('mixLegend'), 'the breakdown needs a legend');
+    assert.ok(admin.includes('monthsTable'), 'the chart needs a table view');
+    assert.ok(admin.includes('--series-1: #2F5C9E'), 'the validated palette is expected');
+  });
+});
+
+describe('Journal des courses', () => {
+  const journal = readFileSync(join(PUBLIC, 'journal.html'), 'utf8');
+  const api = readFileSync(join(process.cwd(), 'api', 'journal.js'), 'utf8');
+  const note = readFileSync(join(PUBLIC, 'note.html'), 'utf8');
+
+  test('the journal page stays private', () => {
+    assert.match(journal, /content="noindex/);
+    assert.ok(robots.includes('Disallow: /journal'));
+    assert.ok(!sitemap.includes('/journal'));
+    assert.ok(!html.includes('/journal'), 'never linked from the public page');
+  });
+
+  test('the API refuses anything without a valid token', () => {
+    assert.ok(api.includes('authorized(request, env)'), 'every request must be checked');
+    assert.ok(api.includes('safeEqual'), 'token comparison must be constant-time');
+    assert.ok(api.includes("json({ error: 'unauthorized' }, 401)"));
+  });
+
+  test('no secret is committed', () => {
+    assert.ok(!/JOURNAL_TOKEN\s*=\s*['"][^'"]+['"]/.test(api), 'the token must come from env only');
+    assert.ok(!existsSync(join(process.cwd(), 'public', 'journal-token.txt')));
+  });
+
+  test('numbering is allocated server-side and protected by a unique index', () => {
+    // La dernière migration qui reconstruit la table doit reposer les index,
+    // sinon ils partent avec l'ancienne table et les doublons redeviennent possibles.
+    const schema = readFileSync(join(process.cwd(), 'migrations', '0002_facture.sql'), 'utf8');
+    assert.ok(schema.includes('UNIQUE INDEX') && schema.includes('(annee, sequence)'),
+      'a unique index is what actually prevents duplicate numbers');
+    assert.ok(api.includes('MAX(sequence)'), 'the next number comes from the database');
+    assert.ok(note.includes('saved.numero'), 'the note must use the number the server allocated');
+  });
+
+  test('printing still works when the journal is unreachable', () => {
+    assert.ok(note.includes('Imprimer quand même'),
+      'a journal outage must never stop the driver handing the client a note');
+  });
+
+  test('only the two legal VAT rates can be stored', () => {
+    assert.ok(api.includes('body.tauxTva === 20 ? 20 : 10'));
+  });
+
+  test('an invoice counts as revenue, a quote does not', () => {
+    const schema = readFileSync(join(process.cwd(), 'migrations', '0002_facture.sql'), 'utf8');
+    assert.ok(schema.includes("type IN ('NOTE', 'FACTURE', 'DEVIS')"), 'the schema rejects invoices');
+    assert.ok(api.includes("ENCAISSEMENTS = new Set(['NOTE', 'FACTURE'])"),
+      'an invoice must be counted in the turnover');
+    assert.ok(api.includes('!ENCAISSEMENTS.has(r.type)'), 'the totals do not use that set');
+    assert.ok(!/ENCAISSEMENTS[^;]*DEVIS/.test(api), 'a quote is not a payment received');
+  });
+
+  test('rebuilding the table does not lose the existing documents', () => {
+    const schema = readFileSync(join(process.cwd(), 'migrations', '0002_facture.sql'), 'utf8');
+    assert.ok(schema.includes('INSERT INTO documents SELECT * FROM documents_old'),
+      'the rows must be copied before the old table is dropped');
+    assert.ok(schema.indexOf('INSERT INTO documents SELECT') < schema.indexOf('DROP TABLE documents_old'),
+      'the copy must happen before the drop');
+  });
+});
