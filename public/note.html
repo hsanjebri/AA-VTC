@@ -195,6 +195,9 @@
       text-decoration: none; transition: opacity .15s, transform .05s;
     }
     .btn:active { transform: translateY(1px); }
+    /* display dans une classe l'emporte sur l'attribut hidden du navigateur :
+       sans cette regle, un bouton masque reste visible. */
+    .btn[hidden] { display: none; }
     .btn:hover { opacity: .88; }
     .btn--gold { background: var(--gold); color: var(--navy); font-weight: 600; }
     .btn--line { background: #fff; color: var(--navy); border: 1px solid var(--navy); }

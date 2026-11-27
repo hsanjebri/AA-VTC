@@ -324,6 +324,13 @@ describe('Lien privé du client', () => {
       'without a unique index two documents could share a link');
   });
 
+  test('the send button stays hidden until the document is saved', () => {
+    // .btn pose display:inline-flex, ce qui l'emporte sur l'attribut hidden :
+    // sans regle explicite, le bouton s'affiche avant d'avoir un lien.
+    assert.ok(note.includes('.btn[hidden] { display: none; }'),
+      'a hidden .btn would still be displayed');
+  });
+
   test('the driver can send and re-send the link without reissuing a document', () => {
     assert.ok(note.includes('function preparerEnvoi'), 'no way to send the link after issuing');
     assert.ok(note.includes('wa.me/'), 'the link must go out through WhatsApp');
