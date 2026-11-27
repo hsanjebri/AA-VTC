@@ -33,6 +33,11 @@
       text-transform: uppercase; padding: 6px 12px; border: 1px solid rgba(255,255,255,.18); border-radius: 999px;
     }
     .topbar nav a[aria-current] { background: var(--gold); color: var(--navy); border-color: var(--gold); font-weight: 600; }
+    .moi { display: inline-flex; align-items: center; gap: 8px; font-size: .68rem; letter-spacing: .12em;
+           text-transform: uppercase; color: rgba(247,244,236,.75); padding: 6px 2px 6px 12px; }
+    .moi[hidden] { display: none; }
+    .moi button { background: none; border: 0; padding: 0; color: var(--gold); font: inherit;
+                  cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 
     .shell { max-width: 1240px; margin: 0 auto; padding: 28px 20px 60px; }
     .eyebrow { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; font-size: .68rem; letter-spacing: .2em; text-transform: uppercase; color: var(--gold-deep); }
@@ -90,7 +95,9 @@
 
     @media (max-width: 760px) {
       .shell { padding: 18px 14px 50px; }
-      th:nth-child(4), td:nth-child(4), th:nth-child(6), td:nth-child(6) { display: none; }
+      /* Sur téléphone on garde l'essentiel : numéro, date, client, montants. */
+      th:nth-child(4), td:nth-child(4), th:nth-child(5), td:nth-child(5),
+      th:nth-child(6), td:nth-child(6) { display: none; }
     }
   </style>
 </head>
@@ -103,6 +110,7 @@
       <a href="/note">Nouvelle note</a>
       <a href="/journal" aria-current="page">Journal</a>
       <a href="/admin">Tableau de bord</a>
+      <span id="moi" class="moi" hidden></span>
     </nav>
   </div>
 </header>
@@ -146,7 +154,7 @@
       <table>
         <thead>
           <tr>
-            <th>N°</th><th>Date</th><th>Client</th><th>Trajet</th>
+            <th>N°</th><th>Date</th><th>Client</th><th>Trajet</th><th>Émis par</th>
             <th class="num">TVA</th><th class="num">HT</th><th class="num">TTC</th>
           </tr>
         </thead>
@@ -176,12 +184,29 @@
       `Bonjour, voici votre ${TYPE_MOT[d.type] || 'document'} EJ-VTC n° ${d.numero}.`,
       `${location.origin}/f/${d.jeton}`,
       `Montant : ${euro.format(d.total_ttc)} TTC.`,
-    ].join('
-');
+    ].join('\n');
     return `https://wa.me/${d.telephone_norm || ''}?text=${encodeURIComponent(texte)}`;
   }
 
-  const token = () => { try { return sessionStorage.getItem(KEY) || ''; } catch { return ''; } };
+
+  /**
+   * La clé peut arriver dans l'adresse : /journal#k=...
+   *
+   * C'est un fragment, donc il n'est jamais transmis au serveur et n'apparaît
+   * dans aucun journal de requêtes. On le range et on nettoie l'adresse tout
+   * de suite, pour qu'il ne reste pas affiché dans la barre du navigateur.
+   *
+   * Le stockage est local et non de session : l'icône posée sur l'écran
+   * d'accueil doit rouvrir le journal sans jamais rien redemander.
+   */
+  (function capterCle() {
+    const trouve = /[#&]k=([A-Za-z0-9_-]{16,80})/.exec(location.hash || '');
+    if (!trouve) return;
+    try { localStorage.setItem(KEY, trouve[1]); } catch { /* stockage indisponible */ }
+    history.replaceState(null, '', location.pathname + location.search);
+  })();
+
+  const token = () => { try { return localStorage.getItem(KEY) || ''; } catch { return ''; } };
 
   async function api(path) {
     const res = await fetch(path, { headers: { Authorization: `Bearer ${token()}` } });
@@ -210,6 +235,7 @@
     const data = await api(`/api/journal?${params}`);
     const { documents, totals } = data;
 
+    montrerUtilisateur(data.utilisateur);
     $('sCourses').textContent = totals.courses;
     $('sHT').textContent = euro.format(totals.totalHt);
     $('sTVA').textContent = euro.format(totals.montantTva);
@@ -224,6 +250,7 @@
         <td>${frDate(d.date_doc)}</td>
         <td>${escapeHtml(d.client) || '—'}${d.client_info ? `<br><span class="trip">${escapeHtml(d.client_info)}</span>` : ''}</td>
         <td><span class="trip">${escapeHtml(d.depart) || '—'}${d.arrivee ? ' → ' + escapeHtml(d.arrivee) : ''}${d.aller_retour ? ' (A/R)' : ''}</span></td>
+        <td><span class="trip">${escapeHtml(d.emis_par) || '—'}</span></td>
         <td class="num">${d.taux_tva} %</td>
         <td class="num">${euro.format(d.total_ht)}</td>
         <td class="num"><strong>${euro.format(d.total_ttc)}</strong></td>
@@ -239,7 +266,7 @@
   async function unlock(depuisSession = false) {
     const value = depuisSession ? token() : $('token').value.trim();
     if (!value) return;
-    try { sessionStorage.setItem(KEY, value); } catch { /* ignore */ }
+    try { localStorage.setItem(KEY, value); } catch { /* ignore */ }
     try {
       await api('/api/journal?limit=1');
       $('gate').classList.add('hidden');
@@ -249,7 +276,7 @@
     } catch (err) {
       $('gateError').textContent = err.message === 'unauthorized' ? 'Clé refusée.' : 'Journal indisponible.';
       $('gateError').classList.remove('hidden');
-      try { sessionStorage.removeItem(KEY); } catch { /* ignore */ }
+      try { localStorage.removeItem(KEY); } catch { /* ignore */ }
     }
   }
 
@@ -266,6 +293,19 @@
     a.click();
     URL.revokeObjectURL(url);
   });
+
+  // Afficher qui est connecté : avec une clé par personne, ce n'est plus
+  // « quelqu'un », et on doit pouvoir se retirer d'un appareil.
+  function montrerUtilisateur(nom) {
+    if (!nom) return;
+    const zone = $('moi');
+    zone.innerHTML = `${escapeHtml(nom)} · <button type="button" id="sortir">Se déconnecter</button>`;
+    zone.hidden = false;
+    $('sortir').addEventListener('click', () => {
+      try { localStorage.removeItem(KEY); } catch { /* ignore */ }
+      location.reload();
+    });
+  }
 
   $('unlock').addEventListener('click', unlock);
   $('token').addEventListener('keydown', (e) => { if (e.key === 'Enter') unlock(); });

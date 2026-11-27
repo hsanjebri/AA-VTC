@@ -270,8 +270,40 @@ describe("Identité de l'entreprise sur les documents", () => {
   });
 });
 
-// Le tableau de bord lit les mêmes données que le journal : il doit être
-// aussi fermé que lui, et ses agrégats doivent exclure les devis.
+// Les tests qui précèdent lisent le HTML comme du texte. Ils ne verraient pas
+// une erreur de syntaxe, qui pourtant tue tout le script de la page — c'est
+// arrivé. Ici on compile vraiment.
+describe('Le JavaScript des pages compile', () => {
+  const pages = ['index.html', 'note.html', 'journal.html', 'admin.html', '404.html'];
+  // Un <script> sans type, ou typé JavaScript, doit compiler. Le JSON-LD n'est
+  // pas du JavaScript : il doit se parser comme du JSON.
+  const estJs = (attrs) => {
+    const type = /type\s*=\s*["']([^"']+)["']/.exec(attrs);
+    return !type || /^(module|text\/javascript|application\/javascript)$/.test(type[1].trim());
+  };
+
+  for (const page of pages) {
+    test(`${page} has no syntax error in its inline scripts`, () => {
+      const texte = readFileSync(join(PUBLIC, page), 'utf8');
+      let compiles = 0;
+      for (const [, balise, source] of texte.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)) {
+        if (!source.trim() || /\bsrc\s*=/.test(balise)) continue;
+        if (estJs(balise)) {
+          assert.doesNotThrow(() => new Function(source), `syntax error in ${page}`);
+          compiles += 1;
+        } else if (/ld\+json/.test(balise)) {
+          assert.doesNotThrow(() => JSON.parse(source), `invalid JSON-LD in ${page}`);
+        }
+      }
+      // Les trois outils internes vivent par leur script : s'il n'y en a plus,
+      // c'est que la page a été vidée, pas qu'elle va bien.
+      if (['note.html', 'journal.html', 'admin.html'].includes(page)) {
+        assert.ok(compiles > 0, `${page} should carry at least one inline script`);
+      }
+    });
+  }
+});
+
 // Le lien client n'a pas d'authentification : le jeton est la clé. Tout ce qui
 // suit vérifie qu'il mérite ce rôle, et qu'un document nominatif ne fuit pas.
 describe('Lien privé du client', () => {
@@ -376,6 +408,8 @@ describe('Normalisation du numéro de téléphone', () => {
   });
 });
 
+// Le tableau de bord lit les mêmes données que le journal : il doit être
+// aussi fermé que lui, et ses agrégats doivent exclure les devis.
 describe('Tableau de bord', () => {
   const admin = readFileSync(join(PUBLIC, 'admin.html'), 'utf8');
   const api = readFileSync(join(process.cwd(), 'api', 'journal.js'), 'utf8');
@@ -387,10 +421,23 @@ describe('Tableau de bord', () => {
     assert.ok(!html.includes('/admin'), 'never linked from the public page');
   });
 
+  test('the internal pages are never cached nor indexed at the edge', () => {
+    const entetes = readFileSync(join(PUBLIC, '_headers'), 'utf8');
+    for (const route of ['/note', '/journal', '/admin']) {
+      const bloc = entetes.slice(entetes.indexOf(`
+${route}
+`), entetes.indexOf(`
+${route}
+`) + 160);
+      assert.ok(bloc.includes('Cache-Control: no-store'), `${route} may sit in a shared cache`);
+      assert.ok(bloc.includes('X-Robots-Tag: noindex'), `${route} may be indexed`);
+    }
+  });
+
   test('the dashboard goes through the same token as the journal', () => {
     assert.ok(admin.includes("'ejvtc.journalToken'"), 'it must reuse the journal key');
     assert.ok(admin.includes('Authorization'), 'the API call must carry the token');
-    assert.ok(!/JOURNAL_TOKEN|Bearer [A-Za-z0-9]{8}/.test(admin), 'no key may be committed');
+    assert.ok(!/JOURNAL_(TOKEN|USERS)|Bearer [A-Za-z0-9]{8}/.test(admin), 'no key may be committed');
   });
 
   test('money figures never count quotes', () => {
@@ -440,15 +487,53 @@ describe('Journal des courses', () => {
     assert.ok(!html.includes('/journal'), 'never linked from the public page');
   });
 
-  test('the API refuses anything without a valid token', () => {
-    assert.ok(api.includes('authorized(request, env)'), 'every request must be checked');
-    assert.ok(api.includes('safeEqual'), 'token comparison must be constant-time');
+  test('the API refuses anything without a valid key', () => {
+    assert.ok(api.includes('identifier(request, env)'), 'every request must be identified');
+    assert.ok(api.includes('safeEqual'), 'key comparison must be constant-time');
     assert.ok(api.includes("json({ error: 'unauthorized' }, 401)"));
   });
 
+  test('one key per person, and the comparison does not leak which one matched', () => {
+    // S'arrêter à la première clé qui correspond révélerait, par le temps de
+    // réponse, de quel compte il s'agit.
+    const fn = api.slice(api.indexOf('function identifier'), api.indexOf('const json ='));
+    assert.ok(fn.includes('env.JOURNAL_USERS'), 'keys must come from the secret store');
+    assert.ok(fn.includes('let trouve = null'), 'all keys must be compared');
+    const boucle = fn.slice(fn.indexOf('for (const compte'), fn.indexOf('return trouve'));
+    assert.ok(!boucle.includes('return'), 'no early return inside the comparison loop');
+    assert.ok(!boucle.includes('break'), 'no early break inside the comparison loop');
+  });
+
+  test('the issuer of each document is recorded', () => {
+    const schema = readFileSync(join(process.cwd(), 'migrations', '0004_emetteur.sql'), 'utf8');
+    assert.ok(schema.includes('emis_par'), 'the issuer column is missing');
+    assert.ok(api.includes('async function create(body, env, emetteur)'), 'create must know the issuer');
+    assert.ok(api.includes('utilisateur: emetteur'), 'the page must be told who is connected');
+  });
+
   test('no secret is committed', () => {
-    assert.ok(!/JOURNAL_TOKEN\s*=\s*['"][^'"]+['"]/.test(api), 'the token must come from env only');
+    assert.ok(!/JOURNAL_(TOKEN|USERS)\s*=\s*['"][^'"]+['"]/.test(api), 'keys must come from env only');
     assert.ok(!existsSync(join(process.cwd(), 'public', 'journal-token.txt')));
+    // Les clés personnelles vivent dans private/, qui est ignoré par Git.
+    const ignore = readFileSync(join(process.cwd(), '.gitignore'), 'utf8');
+    assert.ok(ignore.includes('private/'), 'the private folder must stay out of the repository');
+    for (const page of ['note.html', 'journal.html', 'admin.html']) {
+      const texte = readFileSync(join(PUBLIC, page), 'utf8');
+      assert.ok(!/Bearer [A-Za-z0-9_-]{16,}/.test(texte), `a key is hard-coded in ${page}`);
+    }
+  });
+
+  test('a key handed over in the address is stored, then wiped from the bar', () => {
+    // Le fragment n'atteint jamais le serveur : la clé n'apparaît dans aucun
+    // journal de requêtes. Elle ne doit pas non plus rester affichée.
+    for (const page of ['note.html', 'journal.html', 'admin.html']) {
+      const texte = readFileSync(join(PUBLIC, page), 'utf8');
+      assert.ok(texte.includes('function capterCle'), `${page} cannot take a key from the address`);
+      assert.ok(texte.includes('history.replaceState(null, \'\', location.pathname + location.search)'),
+        `${page} leaves the key visible in the address bar`);
+      assert.ok(texte.includes('localStorage.getItem(') && !texte.includes('sessionStorage.getItem('),
+        `${page} must survive a restart, so the home-screen icon never asks again`);
+    }
   });
 
   test('numbering is allocated server-side and protected by a unique index', () => {

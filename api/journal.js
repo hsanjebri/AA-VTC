@@ -39,12 +39,35 @@ function safeEqual(a, b) {
   return diff === 0;
 }
 
-function authorized(request, env) {
-  const expected = env.JOURNAL_TOKEN;
-  if (!expected) return false;
+/**
+ * Identifie l'appelant à partir de sa clé, et rend son nom.
+ *
+ * Une clé par personne, et non une clé unique partagée : le journal peut
+ * alors dire qui a établi chaque document, et retirer l'accès à quelqu'un
+ * n'oblige plus les autres à changer de clé.
+ *
+ * Les clés vivent dans le secret JOURNAL_USERS, jamais dans le dépôt.
+ */
+function identifier(request, env) {
+  let comptes;
+  try {
+    comptes = JSON.parse(env.JOURNAL_USERS || '[]');
+  } catch {
+    console.error('[journal] JOURNAL_USERS illisible');
+    return null;
+  }
+  if (!Array.isArray(comptes) || comptes.length === 0) return null;
+
   const header = request.headers.get('authorization') || '';
-  const token = header.startsWith('Bearer ') ? header.slice(7) : '';
-  return safeEqual(token, expected);
+  const fournie = header.startsWith('Bearer ') ? header.slice(7) : '';
+
+  // On compare à toutes les clés sans s'arrêter à la première qui correspond :
+  // sortir plus tôt révélerait, par le temps de réponse, laquelle a marché.
+  let trouve = null;
+  for (const compte of comptes) {
+    if (safeEqual(fournie, String(compte?.cle || ''))) trouve = String(compte?.nom || 'Inconnu');
+  }
+  return trouve;
 }
 
 const json = (data, status = 200) =>
@@ -65,7 +88,7 @@ const num = (value) => {
  * numéro si deux enregistrements partent en même temps : en cas de collision
  * on retente avec le numéro suivant.
  */
-async function create(body, env) {
+async function create(body, env, emetteur) {
   const type = TYPES.has(body.type) ? body.type : 'NOTE';
   const prestation = PRESTATIONS.has(body.prestation) ? body.prestation : 'transfert';
   const tauxTva = body.tauxTva === 20 ? 20 : 10;
@@ -98,8 +121,8 @@ async function create(body, env) {
            prestation, detail, aller_retour, km,
            prix_ht, supplement_ht, supplement_label,
            taux_tva, total_ht, montant_tva, total_ttc, paiement,
-           jeton, telephone, telephone_norm, echeance
-         ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+           jeton, telephone, telephone_norm, echeance, emis_par
+         ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       ).bind(
         numero, annee, sequence, type, dateDoc,
         text(body.dateCourse, 10), text(body.heure, 5),
@@ -109,7 +132,7 @@ async function create(body, env) {
         body.km ? round2(num(body.km)) : null,
         prixHt, supplementHt, text(body.supplementLabel),
         tauxTva, totalHt, montantTva, totalTtc, text(body.paiement, 40),
-        jeton, telephone, telephoneNorm, text(body.echeance, 10),
+        jeton, telephone, telephoneNorm, text(body.echeance, 10), emetteur,
       ).run();
 
       // Le lien part avec la réponse : la page peut proposer de l'envoyer au
@@ -125,7 +148,7 @@ async function create(body, env) {
 }
 
 /** Liste filtrée par mois (AAAA-MM) ou par recherche libre. */
-async function list(url, env) {
+async function list(url, env, emetteur) {
   const month = text(url.searchParams.get('month'), 7);
   const query = text(url.searchParams.get('q'), 80);
   const limit = Math.min(Math.max(1, Number(url.searchParams.get('limit')) || 200), 500);
@@ -159,7 +182,7 @@ async function list(url, env) {
     { courses: 0, totalHt: 0, montantTva: 0, totalTtc: 0 },
   );
 
-  return json({ documents: results, totals });
+  return json({ documents: results, totals, utilisateur: emetteur });
 }
 
 /**
@@ -173,7 +196,7 @@ async function list(url, env) {
  * n'est pas une recette. Ils ne reviennent que dans la répartition des
  * documents, et dans le taux de transformation.
  */
-async function stats(url, env) {
+async function stats(url, env, emetteur) {
   const today = url.searchParams.get('today') || new Date().toISOString().slice(0, 10);
   const annee = Number(today.slice(0, 4));
   const mois = Number(today.slice(5, 7));
@@ -233,6 +256,7 @@ async function stats(url, env) {
   const devis = compte('DEVIS');
 
   return json({
+    utilisateur: emetteur,
     aujourdhui: today,
     trimestre: {
       libelle: `T${trimestre} ${annee}`,
@@ -291,7 +315,8 @@ async function exportCsv(url, env) {
 
 export default async function handler(request, env) {
   if (!env?.JOURNAL) return json({ error: 'journal_unavailable' }, 503);
-  if (!authorized(request, env)) return json({ error: 'unauthorized' }, 401);
+  const emetteur = identifier(request, env);
+  if (!emetteur) return json({ error: 'unauthorized' }, 401);
 
   const url = new URL(request.url);
 
@@ -299,12 +324,12 @@ export default async function handler(request, env) {
     if (request.method === 'POST') {
       const body = await request.json().catch(() => null);
       if (!body || typeof body !== 'object') return json({ error: 'invalid_input' }, 400);
-      return await create(body, env);
+      return await create(body, env, emetteur);
     }
     if (request.method === 'GET') {
       if (url.pathname.endsWith('/export')) return await exportCsv(url, env);
-      if (url.pathname.endsWith('/stats')) return await stats(url, env);
-      return await list(url, env);
+      if (url.pathname.endsWith('/stats')) return await stats(url, env, emetteur);
+      return await list(url, env, emetteur);
     }
     return json({ error: 'method_not_allowed' }, 405);
   } catch (err) {

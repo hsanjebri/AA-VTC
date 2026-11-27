@@ -21,6 +21,18 @@
 # Pages HTML : jamais mises en cache longtemps, le contenu commercial change.
 /*.html
   Cache-Control: public, max-age=0, must-revalidate
+# Outils internes : pages nominatives, jamais mises en cache partagé ni
+# indexées. no-store évite aussi qu'une version cassée survive à un correctif.
+/note
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow
+/journal
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow
+/admin
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow
+
 # Fichiers de référencement et de contact : une journée suffit.
 /robots.txt
   Cache-Control: public, max-age=86400

@@ -100,9 +100,34 @@ Variable optionnelle `OVH_REMOTE_DIR` (défaut `/www`) pour le dossier distant.
 | `/note` | Émettre une note ou un devis, imprimer en PDF |
 | `/journal` | Historique, totaux du mois, export CSV |
 
-Les deux pages sont en `noindex`, exclues de `robots.txt` et jamais liées depuis
-le site public. L'API `/api/journal` exige un jeton (`JOURNAL_TOKEN`, secret
-Cloudflare) : **aucun mot de passe n'est stocké dans le dépôt**.
+Les trois pages sont en `noindex`, `no-store`, exclues de `robots.txt` et
+jamais liées depuis le site public.
+
+### Une clé par personne
+
+L'API exige une clé, et **chaque personne a la sienne** (secret `JOURNAL_USERS`,
+une liste `{nom, cle}`). **Aucun mot de passe n'est stocké dans le dépôt.**
+
+Une clé unique partagée ne disait que « quelqu'un », et la retirer à une
+personne obligeait tout le monde à en changer. Avec une clé par personne,
+chaque document porte le nom de son émetteur (`emis_par`), et révoquer un
+accès se limite à retirer une entrée de la liste.
+
+La comparaison est à durée constante **et ne s'arrête pas à la première clé
+qui correspond** : sortir plus tôt révélerait, par le temps de réponse, de quel
+compte il s'agit.
+
+### Ouvrir sans rien taper
+
+Une clé peut arriver dans l'adresse : `/journal#k=<clé>`. C'est un **fragment**,
+donc il n'atteint jamais le serveur et n'apparaît dans aucun journal de
+requêtes. La page le range dans `localStorage` et **nettoie l'adresse aussitôt**.
+
+Chacun pose ce lien sur l'écran d'accueil de son téléphone : une icône, une
+tape, le journal s'ouvre. Plus rien à saisir, jamais. Un bouton
+« Se déconnecter » efface la clé de l'appareil.
+
+Les clés et les liens personnels vivent dans `private/`, ignoré par Git.
 
 **La numérotation est attribuée par le serveur**, pas par le navigateur : une
 suite continue sans trou est une obligation, et un compteur gardé dans le
@@ -114,8 +139,8 @@ Si le journal est indisponible, l'impression reste possible après confirmation 
 une panne ne doit jamais empêcher de remettre sa note au client.
 
 ```bash
-npx wrangler d1 execute ej-vtc-journal --remote --file=./migrations/0001_journal.sql
-npx wrangler secret put JOURNAL_TOKEN
+npx wrangler d1 migrations apply ej-vtc-journal --remote
+npx wrangler secret put JOURNAL_USERS   # < private/journal-users.json
 ```
 
 ## Tarifs (`api/_lib/pricing.js`)

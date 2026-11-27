@@ -43,6 +43,11 @@
       text-transform: uppercase; padding: 6px 12px; border: 1px solid rgba(255,255,255,.18); border-radius: 999px;
     }
     .topbar nav a[aria-current] { background: var(--gold); color: var(--navy); border-color: var(--gold); font-weight: 600; }
+    .moi { display: inline-flex; align-items: center; gap: 8px; font-size: .68rem; letter-spacing: .12em;
+           text-transform: uppercase; color: rgba(247,244,236,.75); padding: 6px 2px 6px 12px; }
+    .moi[hidden] { display: none; }
+    .moi button { background: none; border: 0; padding: 0; color: var(--gold); font: inherit;
+                  cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 
     .shell { max-width: 1240px; margin: 0 auto; padding: 28px 20px 60px; }
     .eyebrow { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; font-size: .68rem; letter-spacing: .2em; text-transform: uppercase; color: var(--gold-deep); }
@@ -147,6 +152,7 @@
       <a href="/note">Nouvelle note</a>
       <a href="/journal">Journal</a>
       <a href="/admin" aria-current="page">Tableau de bord</a>
+      <span id="moi" class="moi" hidden></span>
     </nav>
   </div>
 </header>
@@ -228,7 +234,25 @@
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const frDate = (v) => (v ? v.split('-').reverse().join('/') : '');
 
-  const token = () => { try { return sessionStorage.getItem(KEY) || ''; } catch { return ''; } };
+
+  /**
+   * La clé peut arriver dans l'adresse : /journal#k=...
+   *
+   * C'est un fragment, donc il n'est jamais transmis au serveur et n'apparaît
+   * dans aucun journal de requêtes. On le range et on nettoie l'adresse tout
+   * de suite, pour qu'il ne reste pas affiché dans la barre du navigateur.
+   *
+   * Le stockage est local et non de session : l'icône posée sur l'écran
+   * d'accueil doit rouvrir le journal sans jamais rien redemander.
+   */
+  (function capterCle() {
+    const trouve = /[#&]k=([A-Za-z0-9_-]{16,80})/.exec(location.hash || '');
+    if (!trouve) return;
+    try { localStorage.setItem(KEY, trouve[1]); } catch { /* stockage indisponible */ }
+    history.replaceState(null, '', location.pathname + location.search);
+  })();
+
+  const token = () => { try { return localStorage.getItem(KEY) || ''; } catch { return ''; } };
 
   async function api(path) {
     const res = await fetch(path, { headers: { Authorization: `Bearer ${token()}` } });
@@ -422,6 +446,7 @@
     const data = await api('/api/journal/stats');
     dernieresDonnees = data;
 
+    montrerUtilisateur(data.utilisateur);
     $('periodTitle').textContent = `Trimestre en cours — ${data.trimestre.libelle}`;
     $('periodRange').textContent = `du ${frDate(data.trimestre.debut)} au ${frDate(data.aujourdhui)}`;
     $('tCourses').textContent = data.trimestre.courses;
@@ -442,7 +467,7 @@
   async function unlock(depuisSession = false) {
     const value = depuisSession ? token() : $('token').value.trim();
     if (!value) return;
-    try { sessionStorage.setItem(KEY, value); } catch { /* ignore */ }
+    try { localStorage.setItem(KEY, value); } catch { /* ignore */ }
     try {
       await load();
       $('gate').classList.add('hidden');
@@ -451,13 +476,24 @@
     } catch (err) {
       $('gateError').textContent = err.message === 'unauthorized' ? 'Clé refusée.' : 'Tableau de bord indisponible.';
       $('gateError').classList.remove('hidden');
-      try { sessionStorage.removeItem(KEY); } catch { /* ignore */ }
+      try { localStorage.removeItem(KEY); } catch { /* ignore */ }
     }
   }
 
   // Une seule fois : le graphique est redessiné à chaque redimensionnement,
   // et un écouteur par redessin finirait par s'accumuler.
   $('chartMonths').addEventListener('mouseleave', () => { $('tip').dataset.open = '0'; });
+
+  function montrerUtilisateur(nom) {
+    if (!nom) return;
+    const zone = $('moi');
+    zone.innerHTML = `${escapeHtml(nom)} · <button type="button" id="sortir">Se déconnecter</button>`;
+    zone.hidden = false;
+    $('sortir').addEventListener('click', () => {
+      try { localStorage.removeItem(KEY); } catch { /* ignore */ }
+      location.reload();
+    });
+  }
 
   $('unlock').addEventListener('click', unlock);
   $('token').addEventListener('keydown', (e) => { if (e.key === 'Enter') unlock(); });

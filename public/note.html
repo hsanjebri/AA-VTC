@@ -721,7 +721,26 @@
   $('form').addEventListener('change', render);
   /* ---------- Enregistrement au journal ---------- */
   const TOKEN_KEY = 'ejvtc.journalToken';
-  const journalToken = () => { try { return sessionStorage.getItem(TOKEN_KEY) || ''; } catch { return ''; } };
+  const KEY = TOKEN_KEY;
+
+  /**
+   * La clé peut arriver dans l'adresse : /journal#k=...
+   *
+   * C'est un fragment, donc il n'est jamais transmis au serveur et n'apparaît
+   * dans aucun journal de requêtes. On le range et on nettoie l'adresse tout
+   * de suite, pour qu'il ne reste pas affiché dans la barre du navigateur.
+   *
+   * Le stockage est local et non de session : l'icône posée sur l'écran
+   * d'accueil doit rouvrir le journal sans jamais rien redemander.
+   */
+  (function capterCle() {
+    const trouve = /[#&]k=([A-Za-z0-9_-]{16,80})/.exec(location.hash || '');
+    if (!trouve) return;
+    try { localStorage.setItem(KEY, trouve[1]); } catch { /* stockage indisponible */ }
+    history.replaceState(null, '', location.pathname + location.search);
+  })();
+
+  const journalToken = () => { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch { return ''; } };
 
   async function saveToJournal() {
     const token = journalToken();
